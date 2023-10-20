@@ -113,12 +113,12 @@ impl Volume {
 
     pub fn get_name(&self, name_type: VolumeNameType) -> String {
         let mut array = [0u16;256];
-        (RAW_API.get_volume_name)(self.volume_handle, array.as_mut_ptr(), name_type as DWORD);
+        (RAW_API.lock().unwrap().as_ref().unwrap().get_volume_name)(self.volume_handle, array.as_mut_ptr(), name_type as DWORD);
         wchar_str_to_string(&array)
     }
 
     pub fn select(&self) -> Result<i32, XwfError> {
-        let ret = (RAW_API.select_volume_snapshot)(self.volume_handle);
+        let ret = (RAW_API.lock().unwrap().as_ref().unwrap().select_volume_snapshot)(self.volume_handle);
         if ret < 0 {
             return Err(XwfError::FailedToSelectVolume);
         }
@@ -128,7 +128,7 @@ impl Volume {
     pub fn get_hash_type(&self, get_secondary: bool) -> Option<HashType> {
         let mut prop_type = VsPropType::HashType1;
         if get_secondary { prop_type = VsPropType::HashType2; }
-        let ret = (RAW_API.get_vs_prop)(prop_type as LONG, null_mut());
+        let ret = (RAW_API.lock().unwrap().as_ref().unwrap().get_vs_prop)(prop_type as LONG, null_mut());
         if ret <= 0 {
             return None;
         }
@@ -136,18 +136,18 @@ impl Volume {
     }
 
     pub fn get_item_count(&self) -> u32 {
-        (RAW_API.get_item_count)(null_mut())
+        (RAW_API.lock().unwrap().as_ref().unwrap().get_item_count)(null_mut())
     }
 
     pub fn get_prop(&self, prop_type: PropType) -> i64 {
-        (RAW_API.get_prop)(self.volume_handle, prop_type as DWORD, null_mut())
+        (RAW_API.lock().unwrap().as_ref().unwrap().get_prop)(self.volume_handle, prop_type as DWORD, null_mut())
     }
 
     pub fn get_name_2(&self) -> String {
-        wchar_ptr_to_string((RAW_API.get_prop)(self.volume_handle, PropType::PointerName as DWORD, null_mut()) as LPWSTR)
+        wchar_ptr_to_string((RAW_API.lock().unwrap().as_ref().unwrap().get_prop)(self.volume_handle, PropType::PointerName as DWORD, null_mut()) as LPWSTR)
     }
 
     pub fn close(&self) {
-        (RAW_API.close)(self.volume_handle);
+        (RAW_API.lock().unwrap().as_ref().unwrap().close)(self.volume_handle);
     }
 }

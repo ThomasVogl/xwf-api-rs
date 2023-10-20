@@ -1,3 +1,4 @@
+use crate::xwf::raw_api::{RAW_API, RawApi};
 #[macro_export]
 macro_rules! export_xt_init {
 
@@ -5,6 +6,7 @@ macro_rules! export_xt_init {
         #[no_mangle]
         #[allow(non_snake_case, unused_variables)]
         pub unsafe extern "C"  fn XT_Init(nVersion: DWORD, nFlags: DWORD, hMainWnd: HANDLE, lpReserved: PVOID) -> LONG {
+            RAW_API.lock().unwrap().insert(RawApi::load_no_error());
             let logger = WriteLogger::init(LevelFilter::Debug, Config::default(), Application::new());
             let xtension_version = $variable.xtension_version();
             info!("X-Tension {}, Version {}.{}.{}", $variable.xtension_name(), xtension_version.0, xtension_version.1, xtension_version.2 );
@@ -133,6 +135,27 @@ macro_rules! export_all_functions {
         export_xt_done!($variable);
         export_xt_about!($variable);
         export_xt_process_item!($variable);
+    };
+}
+
+#[macro_export]
+macro_rules! needed_use_declarations {
+    () => {
+        use bitflags::Flags;
+        use winapi::shared::minwindef::*;
+        use winapi::shared::ntdef::*;
+        use simplelog::{WriteLogger, LevelFilter, Config};
+
+        use log::{debug, error, info};
+        use $crate::xwf::*;
+        use $crate::xwf::raw_api::*;
+        use $crate::xwf::api::evidence::*;
+        use $crate::xwf::api::item::*;
+        use $crate::xwf::api::volume::*;
+        use $crate::xwf::api::application::*;
+        use $crate::xwf::api::traits::*;
+        use $crate::xwf::api::window::*;
+        use $crate::xwf::xwf_types::*;
     };
 }
 

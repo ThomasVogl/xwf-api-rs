@@ -43,21 +43,21 @@ impl Case {
 
 
     pub fn get_ev_obj(obj_id: u32) -> Option<Evidence> {
-        Evidence::new((RAW_API.get_ev_obj)(obj_id))
+        Evidence::new((RAW_API.lock().unwrap().as_ref().unwrap().get_ev_obj)(obj_id))
     }
 
     pub fn get_report_tables() -> Vec<ReportTable> {
         let mut optional: LONG = 0;
         let mut ret: Vec<ReportTable> = Vec::new();
         //get num of report tables
-        (RAW_API.get_report_table_info)(null_mut(), -1, &mut optional as PLONG);
+        (RAW_API.lock().unwrap().as_ref().unwrap().get_report_table_info)(null_mut(), -1, &mut optional as PLONG);
 
         let num_tables = optional;
 
 
         for i in 0..num_tables {
             optional = 0;
-            let wstr_ptr = (RAW_API.get_report_table_info)(null_mut(), i, &mut optional as PLONG) as LPWSTR;
+            let wstr_ptr = (RAW_API.lock().unwrap().as_ref().unwrap().get_report_table_info)(null_mut(), i, &mut optional as PLONG) as LPWSTR;
             if wstr_ptr != null_mut() {
                 ret.push(ReportTable {
                     name: wchar_ptr_to_string(wstr_ptr),

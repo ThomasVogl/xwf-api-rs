@@ -69,12 +69,12 @@ impl Evidence {
     }
 
     pub fn open(&self) -> Option<Volume> {
-        let handle = (RAW_API.open_ev_obj)(self.evidence_handle, 0);
+        let handle = (RAW_API.lock().unwrap().as_ref().unwrap().open_ev_obj)(self.evidence_handle, 0);
         Volume::new(handle)
     }
 
     pub fn get_first_evidence() -> Option<Evidence> {
-        let first_ev_obj = (RAW_API.get_first_ev_obj)(null_mut());
+        let first_ev_obj = (RAW_API.lock().unwrap().as_ref().unwrap().get_first_ev_obj)(null_mut());
 
         if first_ev_obj == null_mut() {
             return None;
@@ -84,7 +84,7 @@ impl Evidence {
     }
 
     pub fn get_next_evidence(&self) -> Option<Evidence> {
-        let next_ev_obj = (RAW_API.get_next_ev_obj)(self.evidence_handle, null_mut());
+        let next_ev_obj = (RAW_API.lock().unwrap().as_ref().unwrap().get_next_ev_obj)(self.evidence_handle, null_mut());
 
         if next_ev_obj == null_mut() {
             return None;
@@ -122,7 +122,7 @@ impl Evidence {
        }
 
     pub fn close(&self) {
-        (RAW_API.close_ev_obj)(self.evidence_handle);
+        (RAW_API.lock().unwrap().as_ref().unwrap().close_ev_obj)(self.evidence_handle);
     }
 
     pub fn get_report_table_assocs(&self, sorted: bool) -> Option<ReportTableMap> {
@@ -131,7 +131,7 @@ impl Evidence {
         let mut ret = ReportTableMap::new();
         if sorted { flags = 0x1; }
 
-        let ptr_list = (RAW_API.get_ev_obj_report_table_assocs)(self.evidence_handle,flags,&mut num_pairs) as *const u8;
+        let ptr_list = (RAW_API.lock().unwrap().as_ref().unwrap().get_ev_obj_report_table_assocs)(self.evidence_handle,flags,&mut num_pairs) as *const u8;
 
         if ptr_list == null() {
             return None;
@@ -142,19 +142,19 @@ impl Evidence {
     }
 
     pub fn get_id(&self) -> u32 {
-        let ret = (RAW_API.get_ev_obj_prop)(self.evidence_handle, EvObjPropType::ObjId as DWORD, null_mut());
+        let ret = (RAW_API.lock().unwrap().as_ref().unwrap().get_ev_obj_prop)(self.evidence_handle, EvObjPropType::ObjId as DWORD, null_mut());
         ret as u32
     }
 
     pub fn get_parent_id(&self) -> Option<u32> {
-        let ret = (RAW_API.get_ev_obj_prop)(self.evidence_handle, EvObjPropType::ParentObjId as DWORD, null_mut());
+        let ret = (RAW_API.lock().unwrap().as_ref().unwrap().get_ev_obj_prop)(self.evidence_handle, EvObjPropType::ParentObjId as DWORD, null_mut());
         if ret > 0 { Some(ret as u32)}
         else { None }
 
     }
 
     pub fn get_parent(&self) -> Option<Evidence> {
-        let ret = (RAW_API.get_ev_obj_prop)(self.evidence_handle, EvObjPropType::ParentObjId as DWORD, null_mut());
+        let ret = (RAW_API.lock().unwrap().as_ref().unwrap().get_ev_obj_prop)(self.evidence_handle, EvObjPropType::ParentObjId as DWORD, null_mut());
         if ret > 0 {
             Evidence::get_ev_obj(ret as u32)
         } else {
@@ -163,7 +163,7 @@ impl Evidence {
     }
 
     pub fn get_ev_obj(id: u32) -> Option<Evidence> {
-        let handle = (RAW_API.get_ev_obj)(id) ;
+        let handle = (RAW_API.lock().unwrap().as_ref().unwrap().get_ev_obj)(id) ;
         if  handle != null_mut() {
             Some(Evidence::new(handle).unwrap())
         } else {
@@ -172,13 +172,13 @@ impl Evidence {
     }
 
     pub fn get_flags(&self) -> EvObjPropFlags {
-        let ret = (RAW_API.get_ev_obj_prop)(self.evidence_handle, EvObjPropType::Flags as DWORD, null_mut());
+        let ret = (RAW_API.lock().unwrap().as_ref().unwrap().get_ev_obj_prop)(self.evidence_handle, EvObjPropType::Flags as DWORD, null_mut());
         EvObjPropFlags::from_bits_truncate(ret as u32)
     }
 
     pub fn get_name(&self) -> String {
         let mut buf = [0u16; 256];
-        let ret = (RAW_API.get_ev_obj_prop)(self.evidence_handle, EvObjPropType::AbbrevObjTitle as DWORD, buf.as_mut_ptr() as PVOID);
+        let ret = (RAW_API.lock().unwrap().as_ref().unwrap().get_ev_obj_prop)(self.evidence_handle, EvObjPropType::AbbrevObjTitle as DWORD, buf.as_mut_ptr() as PVOID);
         wchar_str_to_string(&buf)
     }
 

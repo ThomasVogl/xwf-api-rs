@@ -1,6 +1,7 @@
 use std::ffi::CStr;
 use std::mem::transmute_copy;
 use std::ptr::null_mut;
+use std::sync::Mutex;
 use cstr::cstr;
 use winapi::shared::minwindef::{FARPROC, HMODULE};
 use winapi::um::libloaderapi::{GetProcAddress, GetModuleHandleA};
@@ -116,4 +117,4 @@ impl RawApi {
 }
 
 
-pub static RAW_API: Lazy<RawApi> = Lazy::new(RawApi::load_no_error);
+pub static RAW_API: Mutex<Option<RawApi>> = Mutex::new(None);

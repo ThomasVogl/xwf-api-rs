@@ -23,7 +23,7 @@ impl Item {
     }
 
     pub fn open(&self, volume: &Volume, flags: Vec<OpenItemFlags>) -> Result<ItemHandle, XwfError> {
-        let handle = (RAW_API.open_item)(
+        let handle = (RAW_API.lock().unwrap().as_ref().unwrap().open_item)(
             volume.handle(),
             self.item_id,
             OpenItemFlags::from_iter(flags).bits());
@@ -54,7 +54,7 @@ impl Item {
         buf.resize(buf_size,0);
         buf[0..4].clone_from_slice(&flags.to_le_bytes());
 
-        let ret = (RAW_API.get_hash_value)(self.item_id, buf.as_mut_ptr() as LPVOID);
+        let ret = (RAW_API.lock().unwrap().as_ref().unwrap().get_hash_value)(self.item_id, buf.as_mut_ptr() as LPVOID);
 
         if ret != 0 {
             buf.resize(hash_size, 0u8);
@@ -67,7 +67,7 @@ impl Item {
     pub fn get_item_info_flags(&self) -> Option<ItemInfoFlags> {
         let mut success: Box<BOOL> = Box::new(1);
         let success_ptr: *mut BOOL = &mut *success;
-        let result = (RAW_API.get_item_information)(self.item_id, 0x3, success_ptr);
+        let result = (RAW_API.lock().unwrap().as_ref().unwrap().get_item_information)(self.item_id, 0x3, success_ptr);
 
         if *success != 0 {
             Some(ItemInfoFlags::from_bits_truncate(result as u64))
@@ -77,17 +77,17 @@ impl Item {
     }
 
     pub fn get_size(&self) -> usize {
-        (RAW_API.get_item_size)(self.item_id) as usize
+        (RAW_API.lock().unwrap().as_ref().unwrap().get_item_size)(self.item_id) as usize
     }
 
     pub fn get_name(&self) -> String {
-        let wchr_ptr = (RAW_API.get_item_name)(self.item_id as DWORD);
+        let wchr_ptr = (RAW_API.lock().unwrap().as_ref().unwrap().get_item_name)(self.item_id as DWORD);
         wchar_ptr_to_string(wchr_ptr)
     }
 
     pub fn add_to_report_table(&self, name: &String, flags: AddReportTableFlags) {
         let wchar_c_str = string_to_wchar_cstr(&name);
-        (RAW_API.add_to_report_table)(self.item_id, wchar_c_str, flags.bits());
+        (RAW_API.lock().unwrap().as_ref().unwrap().add_to_report_table)(self.item_id, wchar_c_str, flags.bits());
     }
 }
 
@@ -123,7 +123,7 @@ impl ItemHandle {
     }
 
     pub fn get_prop(&self, prop_type: PropType) -> i64 {
-        (RAW_API.get_prop)(self.item_handle, prop_type as DWORD, null_mut())
+        (RAW_API.lock().unwrap().as_ref().unwrap().get_prop)(self.item_handle, prop_type as DWORD, null_mut())
     }
 
     pub fn get_name(&self) -> String {
@@ -142,7 +142,7 @@ impl ItemHandle {
         self.get_prop(PropType::PhysicalSize)
     }
     pub fn close(&self) {
-        (RAW_API.close)(self.item_handle);
+        (RAW_API.lock().unwrap().as_ref().unwrap().close)(self.item_handle);
     }
 
     pub fn read(&self) {

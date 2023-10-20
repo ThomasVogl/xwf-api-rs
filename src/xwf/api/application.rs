@@ -16,26 +16,26 @@ impl Application {
     }
 
     pub fn output(msg: &[u8], flags: OutputMessageFlags) {
-        (RAW_API.output_message)(buf_to_wchar_cstr(msg) ,flags.bits())
+        (RAW_API.lock().unwrap().as_ref().unwrap().output_message)(buf_to_wchar_cstr(msg) ,flags.bits())
     }
 
     pub fn output_string(msg: String, flags: OutputMessageFlags) {
-        (RAW_API.output_message)(string_to_wchar_cstr(&msg) ,flags.bits())
+        (RAW_API.lock().unwrap().as_ref().unwrap().output_message)(string_to_wchar_cstr(&msg) ,flags.bits())
     }
 
     pub fn show_progress(caption: String, flags: ProgressFlags) {
-        (RAW_API.show_progress)(string_to_wchar_cstr(&caption), flags.bits())
+        (RAW_API.lock().unwrap().as_ref().unwrap().show_progress)(string_to_wchar_cstr(&caption), flags.bits())
     }
 
     pub fn set_progress_description(caption: String) {
-        (RAW_API.set_progress_description)(string_to_wchar_cstr(&caption), )
+        (RAW_API.lock().unwrap().as_ref().unwrap().set_progress_description)(string_to_wchar_cstr(&caption), )
     }
 
     pub fn should_stop() -> bool {
-        (RAW_API.should_stop)() != 0
+        (RAW_API.lock().unwrap().as_ref().unwrap().should_stop)() != 0
     }
     pub fn hide_progress() {
-        (RAW_API.hide_progress)()
+        (RAW_API.lock().unwrap().as_ref().unwrap().hide_progress)()
     }
 
     pub fn set_progress_percentage(num: u32, total: u32) {
@@ -45,7 +45,7 @@ impl Application {
         } else {
             percentage = 100;
         }
-        (RAW_API.set_progress_percentage)(percentage);
+        (RAW_API.lock().unwrap().as_ref().unwrap().set_progress_percentage)(percentage);
     }
 
 }
