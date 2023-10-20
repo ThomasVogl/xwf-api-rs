@@ -6,7 +6,7 @@ macro_rules! export_xt_init {
         #[no_mangle]
         #[allow(non_snake_case, unused_variables)]
         pub unsafe extern "C"  fn XT_Init(nVersion: DWORD, nFlags: DWORD, hMainWnd: HANDLE, lpReserved: PVOID) -> LONG {
-            RAW_API.lock().unwrap().insert(RawApi::load_no_error());
+            *RAW_API.lock().unwrap() = Some(RawApi::load_no_error());
             let logger = WriteLogger::init(LevelFilter::Debug, Config::default(), Application::new());
             let xtension_version = $variable.xtension_version();
             info!("X-Tension {}, Version {}.{}.{}", $variable.xtension_name(), xtension_version.0, xtension_version.1, xtension_version.2 );
@@ -25,6 +25,7 @@ macro_rules! export_xt_done {
             -> LONG {
             debug!("XT_Done called");
             $variable.xt_done();
+            *RAW_API.lock().unwrap() = None;
             0
         }
     };

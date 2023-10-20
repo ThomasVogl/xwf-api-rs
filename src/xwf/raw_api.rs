@@ -109,12 +109,10 @@ impl RawApi {
                should_stop: RawApi::load_method(h_module, cstr!(XWF_ShouldStop))?,
 
             })
-
         }
-
-
     }
 }
 
 
 pub static RAW_API: Mutex<Option<RawApi>> = Mutex::new(None);
+
