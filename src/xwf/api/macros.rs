@@ -115,7 +115,6 @@ macro_rules! export_process_item_ex {
 #[macro_export]
 macro_rules! export_all_functions_ex {
     ($variable:ident) => {
-        add_imports!();
         export_xt_init!($variable);
         export_xt_prepare!($variable);
         export_xt_finalize!($variable);
@@ -128,8 +127,6 @@ macro_rules! export_all_functions_ex {
 #[macro_export]
 macro_rules! export_all_functions {
     ($variable:ident) => {
-        add_imports!();
-
         export_xt_init!($variable);
         export_xt_prepare!($variable);
         export_xt_finalize!($variable);
