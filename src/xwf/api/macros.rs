@@ -111,24 +111,7 @@ macro_rules! export_process_item_ex {
         }
     };
 }
-#[macro_export]
-macro_rules! add_imports {
-    () => {
-        use bitflags::Flags;
-        use winapi::shared::minwindef::DWORD;
-        use winapi::shared::ntdef::{HANDLE, LONG, PVOID};
-        use simplelog::{WriteLogger, LevelFilter, Config};
-        use log::{debug, error, info};
 
-        use crate::xwf::api::application::*;
-        use crate::xwf::api::traits::*;
-        use crate::xwf::api::window::*;
-        use crate::xwf::api::evidence::*;
-        use crate::xwf::api::item::*;
-        use crate::xwf::api::volume::*;
-        use crate::xwf::xwf_types::*;
-    };
-}
 #[macro_export]
 macro_rules! export_all_functions_ex {
     ($variable:ident) => {
