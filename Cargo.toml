@@ -15,4 +15,4 @@ simplelog = "0.12.1"
 log = "0.4.20"
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["lib"]

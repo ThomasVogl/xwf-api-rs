@@ -4,7 +4,7 @@ use winapi::shared::ntdef::{HANDLE, LONG, LPWSTR};
 use crate::xwf::api::util::{wchar_ptr_to_string, wchar_str_to_string};
 
 use crate::xwf::api::error::XwfError;
-use crate::xwf::xwf_constants::PropType;
+use crate::xwf::xwf_types::PropType;
 use crate::xwf::raw_api::RAW_API;
 
 
@@ -99,11 +99,11 @@ pub struct Volume {
 
 
 impl Volume {
-    pub fn new(volume_handle: HANDLE) -> Result<Volume, XwfError> {
+    pub fn new(volume_handle: HANDLE) -> Option<Volume> {
         if volume_handle == null_mut() {
-            return Err(XwfError::InputHandleIsNull)
+            return None
         }
-        Ok(Volume {
+        Some(Volume {
             volume_handle
         })
     }

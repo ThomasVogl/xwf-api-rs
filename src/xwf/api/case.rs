@@ -4,7 +4,7 @@ use winapi::shared::ntdef::{LONG, LPWSTR, PLONG};
 use crate::xwf::api::evidence::Evidence;
 use crate::xwf::api::util::wchar_ptr_to_string;
 use crate::xwf::api::error::XwfError;
-use crate::xwf::xwf_constants::ReportTableFlags;
+use crate::xwf::xwf_types::ReportTableFlags;
 use crate::xwf::raw_api::RAW_API;
 
 pub struct ReportTable {
@@ -42,7 +42,7 @@ impl Case {
 
 
 
-    pub fn get_ev_obj(obj_id: u32) -> Result<Evidence, XwfError> {
+    pub fn get_ev_obj(obj_id: u32) -> Option<Evidence> {
         Evidence::new((RAW_API.get_ev_obj)(obj_id))
     }
 

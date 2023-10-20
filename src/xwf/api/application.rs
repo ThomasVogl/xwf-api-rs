@@ -1,7 +1,7 @@
 use std::io::Write;
 use bitflags::Flags;
 use crate::xwf::api::util::{buf_to_wchar_cstr, string_to_wchar_cstr};
-use crate::xwf::xwf_constants::{OutputMessageFlags, ProgressFlags};
+use crate::xwf::xwf_types::{OutputMessageFlags, ProgressFlags};
 use crate::xwf::raw_api::RAW_API;
 
 pub struct Application {

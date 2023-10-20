@@ -7,7 +7,7 @@ use crate::xwf::api::volume::Volume;
 use crate::xwf::api::error::XwfError;
 use crate::xwf::api::util::wchar_str_to_string;
 use crate::xwf::raw_api::RAW_API;
-use crate::xwf::xwf_constants::{EvObjPropFlags, EvObjPropType, PropType};
+use crate::xwf::xwf_types::{EvObjPropFlags, EvObjPropType, PropType};
 
 #[derive(Clone)]
 pub struct Evidence {
@@ -53,12 +53,12 @@ pub type ReportTableMap = HashMap<u16, Vec<u32>>;
 
 
 impl Evidence {
-    pub fn new(evidence_handle: HANDLE) -> Result<Evidence, XwfError> {
+    pub fn new(evidence_handle: HANDLE) -> Option<Evidence> {
         if evidence_handle == null_mut() {
-            return Err(XwfError::InputHandleIsNull)
+            return None
         }
 
-        Ok(Evidence{
+        Some(Evidence{
             evidence_handle,
             child_evidence_id: None,
         })
@@ -68,7 +68,7 @@ impl Evidence {
         return self.evidence_handle
     }
 
-    pub fn open(&self) -> Result<Volume, XwfError> {
+    pub fn open(&self) -> Option<Volume> {
         let handle = (RAW_API.open_ev_obj)(self.evidence_handle, 0);
         Volume::new(handle)
     }
@@ -80,10 +80,7 @@ impl Evidence {
             return None;
         }
 
-        match Evidence::new(first_ev_obj) {
-            Err(_) => None,
-            Ok(e) => Some(e)
-        }
+        Evidence::new(first_ev_obj)
     }
 
     pub fn get_next_evidence(&self) -> Option<Evidence> {
@@ -93,10 +90,7 @@ impl Evidence {
             return None;
         }
 
-        match Evidence::new(next_ev_obj) {
-            Err(_) => None,
-            Ok(e) => Some(e)
-        }
+        Evidence::new(next_ev_obj)
     }
 
 

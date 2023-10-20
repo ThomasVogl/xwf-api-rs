@@ -5,11 +5,12 @@ use winapi::shared::minwindef::{BOOL, DWORD, LPVOID};
 use winapi::shared::ntdef::{HANDLE, LPWSTR};
 use crate::xwf::api::util::{string_to_wchar_cstr, wchar_ptr_to_string};
 use crate::xwf::api::error::XwfError;
+use crate::xwf::api::traits::NativeHandle;
 use crate::xwf::raw_api::{RAW_API};
 use crate::xwf::api::volume::{HashType, Volume};
-use crate::xwf::xwf_constants::{AddReportTableFlags, ItemInfoFlags, OpenItemFlags, PropType};
+use crate::xwf::xwf_types::{AddReportTableFlags, ItemInfoFlags, OpenItemFlags, PropType};
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Item {
     item_id: i32,
 }
@@ -91,11 +92,18 @@ impl Item {
 }
 
 
-
+#[derive(Debug)]
 pub struct ItemHandle {
     item_handle: HANDLE,
     item: Item
 }
+
+impl NativeHandle for ItemHandle {
+    fn get_handle(&self) -> HANDLE {
+        return self.item_handle;
+    }
+}
+
 
 impl ItemHandle {
 
