@@ -1,5 +1,6 @@
 use std::io::Write;
 use bitflags::Flags;
+use crate::get_raw_api;
 use crate::xwf::api::util::{buf_to_wchar_cstr, string_to_wchar_cstr};
 use crate::xwf::xwf_types::{OutputMessageFlags, ProgressFlags};
 use crate::xwf::raw_api::RAW_API;
@@ -16,26 +17,26 @@ impl Application {
     }
 
     pub fn output(msg: &[u8], flags: OutputMessageFlags) {
-        (RAW_API.lock().unwrap().as_ref().unwrap().output_message)(buf_to_wchar_cstr(msg) ,flags.bits())
+        (get_raw_api!().output_message)(buf_to_wchar_cstr(msg) ,flags.bits())
     }
 
     pub fn output_string(msg: String, flags: OutputMessageFlags) {
-        (RAW_API.lock().unwrap().as_ref().unwrap().output_message)(string_to_wchar_cstr(&msg) ,flags.bits())
+        (get_raw_api!().output_message)(string_to_wchar_cstr(&msg) ,flags.bits())
     }
 
     pub fn show_progress(caption: String, flags: ProgressFlags) {
-        (RAW_API.lock().unwrap().as_ref().unwrap().show_progress)(string_to_wchar_cstr(&caption), flags.bits())
+        (get_raw_api!().show_progress)(string_to_wchar_cstr(&caption), flags.bits())
     }
 
     pub fn set_progress_description(caption: String) {
-        (RAW_API.lock().unwrap().as_ref().unwrap().set_progress_description)(string_to_wchar_cstr(&caption), )
+        (get_raw_api!().set_progress_description)(string_to_wchar_cstr(&caption), )
     }
 
     pub fn should_stop() -> bool {
-        (RAW_API.lock().unwrap().as_ref().unwrap().should_stop)() != 0
+        (get_raw_api!().should_stop)() != 0
     }
     pub fn hide_progress() {
-        (RAW_API.lock().unwrap().as_ref().unwrap().hide_progress)()
+        (get_raw_api!().hide_progress)()
     }
 
     pub fn set_progress_percentage(num: u32, total: u32) {
@@ -45,7 +46,7 @@ impl Application {
         } else {
             percentage = 100;
         }
-        (RAW_API.lock().unwrap().as_ref().unwrap().set_progress_percentage)(percentage);
+        (get_raw_api!().set_progress_percentage)(percentage);
     }
 
 }

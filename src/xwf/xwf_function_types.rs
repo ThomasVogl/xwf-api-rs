@@ -51,7 +51,8 @@ pub type FnXwfSetItemInformation = extern "stdcall" fn(
 
 #[allow(non_snake_case, unused_variables)]
 pub type FnXwfGetItemType = extern "stdcall" fn(
-    lpTypeDescr: LPWCH,
+    nItemId: LONG,
+    lpTypeDescr: LPWSTR,
     nBufferLenAndFlags: DWORD
 ) -> LONG;
 

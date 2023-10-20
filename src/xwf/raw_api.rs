@@ -114,5 +114,13 @@ impl RawApi {
 }
 
 
-pub static RAW_API: Mutex<Option<RawApi>> = Mutex::new(None);
+pub static RAW_API: std::sync::OnceLock<RawApi> = std::sync::OnceLock::new();
+
+
+#[macro_export]
+macro_rules! get_raw_api {
+    () => {
+        RAW_API.get_or_init(|| $crate::xwf::raw_api::RawApi::load_no_error())
+    }
+}
 

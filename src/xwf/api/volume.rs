@@ -1,6 +1,7 @@
 use std::ptr::{null_mut};
-use winapi::shared::minwindef::DWORD;
-use winapi::shared::ntdef::{HANDLE, LONG, LPWSTR};
+use winapi::shared::minwindef::{DWORD, LPVOID};
+use winapi::shared::ntdef::{HANDLE, LONG, LPWSTR, PVOID};
+use crate::get_raw_api;
 use crate::xwf::api::util::{wchar_ptr_to_string, wchar_str_to_string};
 
 use crate::xwf::api::error::XwfError;
@@ -113,12 +114,12 @@ impl Volume {
 
     pub fn get_name(&self, name_type: VolumeNameType) -> String {
         let mut array = [0u16;256];
-        (RAW_API.lock().unwrap().as_ref().unwrap().get_volume_name)(self.volume_handle, array.as_mut_ptr(), name_type as DWORD);
+        (get_raw_api!().get_volume_name)(self.volume_handle, array.as_mut_ptr(), name_type as DWORD);
         wchar_str_to_string(&array)
     }
 
     pub fn select(&self) -> Result<i32, XwfError> {
-        let ret = (RAW_API.lock().unwrap().as_ref().unwrap().select_volume_snapshot)(self.volume_handle);
+        let ret = (get_raw_api!().select_volume_snapshot)(self.volume_handle);
         if ret < 0 {
             return Err(XwfError::FailedToSelectVolume);
         }
@@ -128,26 +129,50 @@ impl Volume {
     pub fn get_hash_type(&self, get_secondary: bool) -> Option<HashType> {
         let mut prop_type = VsPropType::HashType1;
         if get_secondary { prop_type = VsPropType::HashType2; }
-        let ret = (RAW_API.lock().unwrap().as_ref().unwrap().get_vs_prop)(prop_type as LONG, null_mut());
+        let ret = (get_raw_api!().get_vs_prop)(prop_type as LONG, null_mut());
         if ret <= 0 {
             return None;
         }
         Some(HashType::try_from(ret).unwrap())
     }
 
+    pub fn set_hash_type(&self, hash_type: HashType, set_secondary: bool) -> Result<(), ()>{
+
+        let mut prop_type = VsPropType::SetHashType1;
+        if set_secondary { prop_type = VsPropType::SetHashType2; }
+
+        let _buf_hash_type = hash_type as u32;
+
+        let ret = (get_raw_api!().get_vs_prop)(prop_type as LONG, _buf_hash_type.to_le_bytes().as_ptr() as PVOID);
+
+        if ret < 0 {
+            Err(())
+        } else {
+            Ok(())
+        }
+    }
+
     pub fn get_item_count(&self) -> u32 {
-        (RAW_API.lock().unwrap().as_ref().unwrap().get_item_count)(null_mut())
+        (get_raw_api!().get_item_count)(null_mut())
+    }
+
+    pub fn get_item_count_dbc(&self) -> u32 {
+        (get_raw_api!().get_item_count)(1 as LPVOID)
     }
 
     pub fn get_prop(&self, prop_type: PropType) -> i64 {
-        (RAW_API.lock().unwrap().as_ref().unwrap().get_prop)(self.volume_handle, prop_type as DWORD, null_mut())
+        (get_raw_api!().get_prop)(self.volume_handle, prop_type as DWORD, null_mut())
     }
 
     pub fn get_name_2(&self) -> String {
-        wchar_ptr_to_string((RAW_API.lock().unwrap().as_ref().unwrap().get_prop)(self.volume_handle, PropType::PointerName as DWORD, null_mut()) as LPWSTR)
+        wchar_ptr_to_string((get_raw_api!().get_prop)(self.volume_handle, PropType::PointerName as DWORD, null_mut()) as LPWSTR)
     }
 
     pub fn close(&self) {
-        (RAW_API.lock().unwrap().as_ref().unwrap().close)(self.volume_handle);
+        (get_raw_api!().close)(self.volume_handle);
     }
 }
+
+
+unsafe impl Send for Volume {}
+unsafe impl Sync for Volume {}

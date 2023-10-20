@@ -13,10 +13,11 @@ pub trait NativeHandle {
 
 
 pub trait XTension {
-    //TODO implement LicenseInfo argument, currently it is empty
 
     fn xtension_version(&self) -> (u8, u8, u8);
     fn xtension_name(&self) -> String;
+
+    //TODO implement LicenseInfo argument, currently it is empty
     fn xt_init(&mut self, version: XtVersion, flags: XtInitFlags, main_window: Option<Window>, license_info: XtLicenseInfo) -> XtInitReturn {
         XtInitReturn::RunSingleThreaded
     }

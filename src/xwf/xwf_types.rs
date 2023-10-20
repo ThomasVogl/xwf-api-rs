@@ -1,5 +1,6 @@
 use std::ops::Deref;
 use bitflags::bitflags;
+
 bitflags! {
     pub struct ItemInfoFlags: u64 {
         const IsDirectory                           = 0x00000001;
@@ -182,7 +183,7 @@ bitflags! {
                                             // (preferable for example so that you do not get called for ignorable files that were recognized
                                             // as such by hash database matching during the same volume snapshot refinement run)
 
-        const ExpectMoreItems = 0x04;       //in case of XT_ACTION_RVS, to signal XWF that you may create more items in the volume snapshot,
+        const ExpectMoreItemsToBeCreated = 0x04;       //in case of XT_ACTION_RVS, to signal XWF that you may create more items in the volume snapshot,
                                             //so that for example the user will definitely be informed of how many item were added (v16.5 and later only)
 
         const DoNotOmit = 0x08;             //in case of XT_ACTION_RVS, to signal XWF that you wish to receive calls for XT_ProcessItem[Ex]()
@@ -193,6 +194,13 @@ bitflags! {
 
         const ProcessZerorBytesFiles = 0x20;//in case of XT_ACTION_RVS, to signal XWF that you wish to receive calls for XT_ProcessItem[Ex]()
                                             //even for files that have a size of 0 bytes, which are otherwise skipped for performance reasons (v18.9 SR-7 and later only)
+        const _ = !0;
+    }
+
+    pub struct ItemTypeFlags: u32 {
+        const TextualDescriptionType = 0x20000000; //receive a textual description of the file type instead (e.g. “JPEG” or “Dynamic-Link Library”)
+        const TextualDescriptionCategory = 0x40000000; //receive a textual designation of the category that the file type belongs to instead (e.g. “Pictures” or “Programs”)
+        const ReceiveTypeStatus = 0x80000000; //receive type status as usual in the lowest byte, but file format consistency in the second-lowest byte (0=unknown, 1=OK, 2=irregular), v19.3 and later
         const _ = !0;
     }
 
@@ -314,13 +322,13 @@ pub enum XtPrepareOpType {
 }
 
 pub struct XtLicenseInfo {}
-
+#[derive(Debug, PartialEq, Eq)]
 pub enum XtInitReturn {
     PreventFurtherUseOfDll = -1,
     RunSingleThreaded = 1,
     RunMultiThreaded = 2,
 }
-
+#[derive(Debug, PartialEq, Eq)]
 pub enum XtFinalizeReturn {
     RefreshDirectoryListing = 1,
     Ok = 0
@@ -382,6 +390,144 @@ impl std::convert::TryFrom<u32> for XtPrepareOpType {
         }
     }
 }
+#[derive(Debug, PartialEq, Eq)]
+pub enum FileFormatConsistency {
+    Unknown = 0,
+    Ok = 1,
+    Irregular = 2,
+}
 
+impl TryFrom<i32> for FileFormatConsistency {
+    type Error = ();
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        if value < 0 {
+            return Err(());
+        }
+
+        let val = (value & 0xFF00) >> 8;
+        match val {
+            x if x == FileFormatConsistency::Ok as i32 => Ok(FileFormatConsistency::Ok),
+            x if x == FileFormatConsistency::Irregular as i32 => Ok(FileFormatConsistency::Irregular),
+            x if x == FileFormatConsistency::Unknown as i32 => Ok(FileFormatConsistency::Unknown),
+            _ => Err(())
+        }
+    }
+}
+#[derive(Debug, PartialEq, Eq)]
+pub enum FileTypeStatus {
+    NotVerified = 0,
+    TooSmall = 1,
+    TotallyUnknown = 2,
+    Confirmed=3,
+    NotConfirmed=4,
+    NewlyIdentified=5,
+    MismatchDetected=6,
+}
+
+
+impl TryFrom<i32> for FileTypeStatus {
+    type Error = ();
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        if value < 0 {
+            return Err(());
+        }
+        let val = value & 0xFF;
+        match val {
+            x if x == FileTypeStatus::NotVerified as i32 => Ok(FileTypeStatus::NotVerified),
+            x if x == FileTypeStatus::TooSmall as i32 => Ok(FileTypeStatus::TooSmall),
+            x if x == FileTypeStatus::TotallyUnknown as i32 => Ok(FileTypeStatus::TotallyUnknown),
+            x if x == FileTypeStatus::Confirmed as i32 => Ok(FileTypeStatus::Confirmed),
+            x if x == FileTypeStatus::NotConfirmed as i32 => Ok(FileTypeStatus::NotConfirmed),
+            x if x == FileTypeStatus::NewlyIdentified as i32 => Ok(FileTypeStatus::NewlyIdentified),
+            x if x == FileTypeStatus::MismatchDetected as i32 => Ok(FileTypeStatus::MismatchDetected),
+            _ => Err(())
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum FileTypeCategory {
+    Picture,
+    Word,
+    Email,
+    Internet,
+    PageLayout,
+    Spreadsheet,
+    Misc,
+    Text,
+    Archive,
+    Audio,
+    Video,
+    WindowsInternal,
+    Thumbnail,
+    Database,
+    Program,
+    MobilePhone,
+    Chat,
+    AddressBook,
+    MacOsXIos,
+    Cad,
+    VariousData,
+    Gps,
+    DiskImage,
+    SourceCode,
+    Cryptography,
+    WindowsRegistry,
+    P2P,
+    Ebook,
+    Graphics3D,
+    Projects,
+    UnixLinux,
+    Font,
+    StillImage,
+    Unknown,
+    Other,
+}
+
+impl From<String> for FileTypeCategory {
+    fn from(value: String) -> Self {
+        match value.to_lowercase().as_str() {
+
+
+            "pictures" => FileTypeCategory::Picture,
+            "text, word processing" => FileTypeCategory::Word,
+            "e-mail" => FileTypeCategory::Email,
+            "internet" => FileTypeCategory::Internet,
+            "page layout" => FileTypeCategory::PageLayout,
+            "spreadsheet" => FileTypeCategory::Spreadsheet,
+            "misc documents" => FileTypeCategory::Misc,
+            "plain text" => FileTypeCategory::Text,
+            "archives/backup" => FileTypeCategory::Archive,
+            "audio" => FileTypeCategory::Audio,
+            "video" => FileTypeCategory::Video,
+            "windows internals" => FileTypeCategory::WindowsInternal,
+            "thumbnails/icons" => FileTypeCategory::Thumbnail,
+            "database, finance" => FileTypeCategory::Database,
+            "programs" => FileTypeCategory::Program,
+            "mobile phones" => FileTypeCategory::MobilePhone,
+            "chat, messaging" => FileTypeCategory::Chat,
+            "address book" => FileTypeCategory::AddressBook,
+            "mac os x/ios system" => FileTypeCategory::MacOsXIos,
+            "cad" => FileTypeCategory::Cad,
+            "various data" => FileTypeCategory::VariousData,
+            "gps/navigation" => FileTypeCategory::Gps,
+            "disk image" => FileTypeCategory::DiskImage,
+            "source code" => FileTypeCategory::SourceCode,
+            "cryptography" => FileTypeCategory::Cryptography,
+            "windows registry" => FileTypeCategory::WindowsRegistry,
+            "p2p" => FileTypeCategory::P2P,
+            "ebook" => FileTypeCategory::Ebook,
+            "3d graphics" => FileTypeCategory::Graphics3D,
+            "projects" => FileTypeCategory::Projects,
+            "unix/linux system" => FileTypeCategory::UnixLinux,
+            "fonts" => FileTypeCategory::UnixLinux,
+            "still image" => FileTypeCategory::StillImage,
+            "other/unknown type" => FileTypeCategory::Unknown,
+            "anderer/unbek. typ" => FileTypeCategory::Unknown,
+            _ => FileTypeCategory::Other
+        }
+    }
+}
 
 
