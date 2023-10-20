@@ -302,7 +302,7 @@ pub enum EvObjPropType {
     HashValue2          = 41,	//DWORD	LPVOID	hash value #2 (buffer size according to hash type), returns the hash size in bytes
     NumberOfDataWindow  = 50,	//WORD	LPVOID	the number of the data window that currently represents the evidence object, or 0 if the evidence object is not open, available in v19.9 SR-7 and later
 }
-
+#[derive(Debug, PartialEq, Eq)]
 pub enum XtPrepareOpType {
     ActionRun                       = 0, // simply run directly from the main menu or command line3
     ActionVolumeSnapshotRefinement  = 1, // volume snapshot refinement starting2
