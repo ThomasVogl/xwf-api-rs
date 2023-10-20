@@ -8,8 +8,6 @@ use winapi::um::libloaderapi::{GetProcAddress, GetModuleHandleA};
 
 use crate::xwf::xwf_function_types::*;
 
-use once_cell::sync::Lazy;
-
 pub struct RawApi {
     pub output_message: FnXwfOutputMessage,
     pub get_volume_name: FnXwfGetVolumeName,

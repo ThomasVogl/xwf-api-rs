@@ -40,7 +40,7 @@ impl Application {
     }
 
     pub fn set_progress_percentage(num: u32, total: u32) {
-        let mut percentage = 0;
+        let mut percentage:u32;
         if total > 0 {
             percentage = (100.0f32 * num as f32 / total as f32).round() as u32;
         } else {

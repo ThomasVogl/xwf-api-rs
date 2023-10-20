@@ -7,8 +7,9 @@ macro_rules! export_xt_init {
         #[no_mangle]
         #[allow(non_snake_case, unused_variables)]
         pub extern "C"  fn XT_Init(nVersion: DWORD, nFlags: DWORD, hMainWnd: HANDLE, lpReserved: PVOID) -> LONG {
-
-            $variable.get_or_init(|| Mutex::new(<$variable_type>::create()));
+            unsafe {
+                $variable.get_or_init(|| <$variable_type>::create());
+            }
 
             let logger = WriteLogger::init(LevelFilter::Debug, Config::default(), Application::new());
 
@@ -25,7 +26,10 @@ macro_rules! export_xt_init {
 #[macro_export]
 macro_rules! get_lib_instance {
     ($variable:ident, $variable_type:ty) => {
-        $variable.get_or_init(|| Mutex::new(<$variable_type>::create())).lock().unwrap()
+        unsafe {
+            $variable.get_mut().unwrap()
+        }
+
     }
 }
 #[macro_export]
@@ -130,7 +134,7 @@ macro_rules! export_xt_process_item_ex {
 #[macro_export]
 macro_rules! create_static_var {
     ($variable_name:ident, $variable_type:ty) => {
-        static $variable_name: OnceLock<Mutex<$variable_type>> = OnceLock::new();
+        static mut $variable_name: OnceLock<$variable_type> = OnceLock::new();
     }
 }
 
