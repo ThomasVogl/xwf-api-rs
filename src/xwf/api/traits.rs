@@ -14,6 +14,8 @@ pub trait NativeHandle {
 
 pub trait XTension {
 
+    fn create() -> Self;
+
     fn xtension_version(&self) -> (u8, u8, u8);
     fn xtension_name(&self) -> String;
 
