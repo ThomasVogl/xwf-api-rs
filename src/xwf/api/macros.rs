@@ -1,3 +1,4 @@
+use std::sync::Mutex;
 use crate::xwf::raw_api::{RAW_API, RawApi};
 #[macro_export]
 macro_rules! export_xt_init {
@@ -8,10 +9,10 @@ macro_rules! export_xt_init {
         pub unsafe extern "C"  fn XT_Init(nVersion: DWORD, nFlags: DWORD, hMainWnd: HANDLE, lpReserved: PVOID) -> LONG {
             *RAW_API.lock().unwrap() = Some(RawApi::load_no_error());
             let logger = WriteLogger::init(LevelFilter::Debug, Config::default(), Application::new());
-            let xtension_version = $variable.xtension_version();
-            info!("X-Tension {}, Version {}.{}.{}", $variable.xtension_name(), xtension_version.0, xtension_version.1, xtension_version.2 );
+            let xtension_version = $variable.lock().unwrap().xtension_version();
+            info!("X-Tension {}, Version {}.{}.{}", $variable.lock().unwrap().xtension_name(), xtension_version.0, xtension_version.1, xtension_version.2 );
             debug!("XT_Init called");
-            $variable.xt_init(XtVersion::try_from(nVersion).unwrap(), XtInitFlags::from_bits_truncate(nFlags), Window::new(hMainWnd), XtLicenseInfo {}) as i32
+            $variable.lock().unwrap().xt_init(XtVersion::try_from(nVersion).unwrap(), XtInitFlags::from_bits_truncate(nFlags), Window::new(hMainWnd), XtLicenseInfo {}) as i32
         }
     }
 
@@ -24,7 +25,7 @@ macro_rules! export_xt_done {
         pub unsafe extern "C" fn XT_Done(lpReserved: PVOID)
             -> LONG {
             debug!("XT_Done called");
-            $variable.xt_done();
+            $variable.lock().unwrap().xt_done();
             *RAW_API.lock().unwrap() = None;
             0
         }
@@ -38,7 +39,7 @@ macro_rules! export_xt_about {
         pub unsafe extern "C" fn XT_About(hParentWnd: HANDLE, lpReserved: PVOID)
             -> LONG {
             debug!("XT_About called");
-            $variable.xt_about(Window::new(hParentWnd));
+            $variable.lock().unwrap().xt_about(Window::new(hParentWnd));
             0
         }
     };
@@ -58,7 +59,7 @@ macro_rules! export_xt_prepare {
                 return XtPrepareReturn::Negative(XtPrepareNegativeReturn::JustCallXtFinalize).into();
             }
 
-            $variable.xt_prepare(
+            $variable.lock().unwrap().xt_prepare(
                 Volume::new(hVolume),
                 Evidence::new(hEvidence),
                 opt_op_type.unwrap()).into()
@@ -80,7 +81,7 @@ macro_rules! export_xt_finalize {
                 return XtFinalizeReturn::Ok.into();
             }
 
-            $variable.xt_finalize(
+            $variable.lock().unwrap().xt_finalize(
                 Volume::new(hVolume),
                 Evidence::new(hEvidence),
                 opt_op_type.unwrap()).into()
@@ -95,7 +96,7 @@ macro_rules! export_xt_process_item {
         pub unsafe extern "C" fn XT_ProcessItem(nItemID: LONG,  lpReserved: PVOID) -> LONG {
             let item = Item::new(nItemID);
 
-            $variable.xt_process_item(item).into()
+            $variable.lock().unwrap().xt_process_item(item).into()
         }
     };
 }
@@ -110,7 +111,7 @@ macro_rules! export_process_item_ex {
             if res_item.is_err() {
                 error!("error in parsing hItem argument");
             }
-            $variable.xt_process_item_ex(res_item.unwrap()).into()
+            $variable.lock().unwrap().xt_process_item_ex(res_item.unwrap()).into()
         }
     };
 }
@@ -129,13 +130,14 @@ macro_rules! export_all_functions_ex {
 
 #[macro_export]
 macro_rules! export_all_functions {
-    ($variable:ident) => {
-        export_xt_init!($variable);
-        export_xt_prepare!($variable);
-        export_xt_finalize!($variable);
-        export_xt_done!($variable);
-        export_xt_about!($variable);
-        export_xt_process_item!($variable);
+    ($libtype:ty) => {
+        static mylib:Mutex<$libtype> = Mutex::new(<$libtype>::create());
+        export_xt_init!(mylib);
+        export_xt_prepare!(mylib);
+        export_xt_finalize!(mylib);
+        export_xt_done!(mylib);
+        export_xt_about!(mylib);
+        export_xt_process_item!(mylib);
     };
 }
 
