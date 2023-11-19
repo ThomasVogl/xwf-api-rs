@@ -6,7 +6,7 @@ use log::debug;
 
 use winapi::shared::minwindef::{BOOL, DWORD, LPVOID};
 use winapi::shared::ntdef::{HANDLE, LPWSTR};
-use crate::get_raw_api;
+use crate::{get_raw_api, xwf};
 use crate::xwf::api::application::Application;
 use crate::xwf::api::util::{string_to_wchar_cstr, wchar_ptr_to_string, wchar_str_to_string};
 use crate::xwf::api::error::XwfError;
@@ -39,6 +39,26 @@ impl Item {
         Item {
             item_id,
         }
+    }
+
+    pub fn get_child_items(&self, volume: &Volume) -> Result<Vec<Item>, XwfError> {
+        let mut ret: Vec<Item> = Vec::new();
+        let num_items = volume.select()?;
+
+        for i in 0..num_items {
+            let item = Item::new(i);
+            match item.get_parent_item() {
+                Some(parent_item) => { 
+                    if self.item_id == parent_item.item_id {
+                        ret.push(item)
+                    }
+                },
+                None => {},
+            }
+
+        }
+        Ok(ret)
+
     }
 
     pub fn open(&self, volume: &Volume, flags: Vec<OpenItemFlags>) -> Result<ItemHandle, XwfError> {
@@ -99,15 +119,15 @@ impl Item {
         }
     }
 
-    pub fn get_item_info_flags(&self) -> Option<ItemInfoFlags> {
+    pub fn get_item_info_flags(&self) -> Result<ItemInfoFlags, XwfError> {
         let mut success: Box<BOOL> = Box::new(1);
         let success_ptr: *mut BOOL = &mut *success;
         let result = (get_raw_api!().get_item_information)(self.item_id, 0x3, success_ptr);
 
         if *success != 0 {
-            Some(ItemInfoFlags::from_bits_truncate(result as u64))
+            Ok(ItemInfoFlags::from_bits_truncate(result as u64))
         } else {
-            None
+            Err(XwfError::XwfFunctionCallFailed)
         }
     }
 
@@ -125,9 +145,17 @@ impl Item {
         (get_raw_api!().add_to_report_table)(self.item_id, wchar_c_str, flags.bits());
     }
 
-    pub fn get_item_type(&self, long_desc: bool) -> Result<(FileTypeStatus, FileFormatConsistency, String), ()> {
+    pub fn get_parent_item(&self) -> Option<Item> {
+        let parent_id = (get_raw_api!().get_item_parent)(self.item_id);
 
+        if parent_id < 0 {
+            None
+        } else {
+            Some(Item::new(parent_id))
+        }
+    }
 
+    pub fn get_item_type(&self, long_desc: bool) -> Result<(FileTypeStatus, FileFormatConsistency, String), XwfError> {
         let mut buf = [0u16; 256];
 
 
@@ -142,13 +170,13 @@ impl Item {
         let status = (get_raw_api!().get_item_type)(self.item_id, buf.as_mut_ptr(), buf_and_flags);
 
         Ok(
-            (   FileTypeStatus::try_from(status)?,
-                FileFormatConsistency::try_from(status)?,
+            (   FileTypeStatus::try_from(status).map_err(|e| XwfError::InvalidEnumValue)?,
+                FileFormatConsistency::try_from(status).map_err(|e| XwfError::InvalidEnumValue)?,
                 wchar_str_to_string(buf.as_slice())
             ),
            )
     }
-    pub fn get_item_category(&self) -> Result<(FileTypeStatus, FileFormatConsistency, FileTypeCategory), ()> {
+    pub fn get_item_category(&self) -> Result<(FileTypeStatus, FileFormatConsistency, FileTypeCategory), XwfError> {
         let mut buf = [0u16; 256];
 
         let flags = ItemTypeFlags::ReceiveTypeStatus | ItemTypeFlags::TextualDescriptionCategory;
@@ -157,12 +185,12 @@ impl Item {
         let status = (get_raw_api!().get_item_type)(self.item_id, buf.as_mut_ptr(), buf_and_flags);
 
         if buf[0] == 0 {
-            return Err(());
+            return Err(XwfError::XwfFunctionCallFailed);
         }
 
         Ok(
-            (   FileTypeStatus::try_from(status)?,
-                FileFormatConsistency::try_from(status)?,
+            (   FileTypeStatus::try_from(status).map_err(|e| XwfError::InvalidEnumValue)?,
+                FileFormatConsistency::try_from(status).map_err(|e| XwfError::InvalidEnumValue)?,
                 FileTypeCategory::from(wchar_str_to_string(buf.as_slice()))
             ),
         )

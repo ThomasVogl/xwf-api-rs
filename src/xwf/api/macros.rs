@@ -14,8 +14,8 @@ macro_rules! export_xt_init {
             let logger = WriteLogger::init(LevelFilter::Debug, Config::default(), Application::new());
 
             let xtension_version = get_lib_instance!($variable, $variable_type).xtension_version();
-            info!("X-Tension {}, Version {}.{}.{}", get_lib_instance!($variable, $variable_type).xtension_name(), xtension_version.0, xtension_version.1, xtension_version.2 );
-            debug!("XT_Init called");
+            //info!("X-Tension {}, Version {}.{}.{}", get_lib_instance!($variable, $variable_type).xtension_name(), xtension_version.0, xtension_version.1, xtension_version.2 );
+            //debug!("XT_Init called");
             get_lib_instance!($variable, $variable_type).xt_init(XtVersion::try_from(nVersion).unwrap(),
             XtInitFlags::from_bits_truncate(nFlags),
             Window::new(hMainWnd), XtLicenseInfo {}) as i32
@@ -39,7 +39,7 @@ macro_rules! export_xt_done {
         #[allow(non_snake_case, unused_variables)]
         pub extern "C" fn XT_Done(lpReserved: PVOID)
             -> LONG {
-            debug!("XT_Done called");
+            //debug!("XT_Done called");
             get_lib_instance!($variable, $variable_type).xt_done();
             0
         }
@@ -52,7 +52,7 @@ macro_rules! export_xt_about {
         #[allow(non_snake_case, unused_variables)]
         pub extern "C" fn XT_About(hParentWnd: HANDLE, lpReserved: PVOID)
             -> LONG {
-            debug!("XT_About called");
+            //debug!("XT_About called");
             get_lib_instance!($variable, $variable_type).xt_about(Window::new(hParentWnd));
             0
         }
@@ -65,7 +65,7 @@ macro_rules! export_xt_prepare {
         #[allow(non_snake_case, unused_variables)]
         pub extern "C" fn XT_Prepare(hVolume: HANDLE, hEvidence: HANDLE,  nOpType: DWORD, lpReserved: PVOID
         ) -> LONG {
-            debug!("XT_Prepare called");
+            //debug!("XT_Prepare called");
 
             let opt_op_type = XtPrepareOpType::try_from(nOpType);
             if opt_op_type.is_err() {
@@ -74,7 +74,7 @@ macro_rules! export_xt_prepare {
             }
 
             get_lib_instance!($variable, $variable_type).xt_prepare(
-                Volume::new(hVolume),
+                Volume::new(hVolume).ok(),
                 Evidence::new(hEvidence),
                 opt_op_type.unwrap()).into()
 
@@ -88,7 +88,7 @@ macro_rules! export_xt_finalize {
         #[allow(non_snake_case, unused_variables)]
         pub extern "C" fn XT_Finalize(hVolume: HANDLE, hEvidence: HANDLE,  nOpType: DWORD, lpReserved: PVOID
         ) -> LONG {
-            debug!("XT_Finalize called");
+            //debug!("XT_Finalize called");
             let opt_op_type = XtPrepareOpType::try_from(nOpType);
             if opt_op_type.is_err() {
                 error!("error in parsing nOpType argument");
@@ -96,7 +96,7 @@ macro_rules! export_xt_finalize {
             }
 
             get_lib_instance!($variable, $variable_type).xt_finalize(
-                Volume::new(hVolume),
+                Volume::new(hVolume).ok(),
                 Evidence::new(hEvidence),
                 opt_op_type.unwrap()).into()
         }

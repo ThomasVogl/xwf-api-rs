@@ -100,11 +100,11 @@ pub struct Volume {
 
 
 impl Volume {
-    pub fn new(volume_handle: HANDLE) -> Option<Volume> {
+    pub fn new(volume_handle: HANDLE) -> Result<Volume, XwfError> {
         if volume_handle == null_mut() {
-            return None
+            return Err(XwfError::InputHandleIsNull)
         }
-        Some(Volume {
+        Ok(Volume {
             volume_handle
         })
     }
@@ -121,7 +121,7 @@ impl Volume {
     pub fn select(&self) -> Result<i32, XwfError> {
         let ret = (get_raw_api!().select_volume_snapshot)(self.volume_handle);
         if ret < 0 {
-            return Err(XwfError::FailedToSelectVolume);
+            return Err(XwfError::XwfFunctionCallFailed);
         }
         Ok(ret)
     }

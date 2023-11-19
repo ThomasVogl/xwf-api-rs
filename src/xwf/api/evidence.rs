@@ -27,6 +27,9 @@ pub struct ReportTableListItem {
     pub item_id: u32,
 }
 
+
+
+
 impl ReportTableListItem {
     pub fn insert_to_map(ptr: *const u8, num_elements: i32, table_map: &mut ReportTableMap) {
         let list_ptr = ptr as *const ReportTableListItemPacked;
@@ -50,6 +53,27 @@ impl ReportTableListItem {
 
 pub type ReportTableMap = HashMap<u16, Vec<u32>>;
 
+pub struct EvidenceIterator {
+    current_ev: HANDLE,
+}
+
+impl Iterator for EvidenceIterator {
+    type Item = Evidence;
+
+    fn next(&mut self) -> Option<Self::Item> {
+
+        let ev = Evidence::new(self.current_ev);
+
+        if self.current_ev != null_mut() {
+            let next_ev_obj = (get_raw_api!().get_next_ev_obj)(self.current_ev, null_mut());
+            self.current_ev = next_ev_obj;
+        }
+
+        ev
+        
+    }
+}
+
 
 
 
@@ -62,14 +86,18 @@ impl Evidence {
         Some(Evidence{
             evidence_handle,
             child_evidence_id: None,
-        })
+        })  
+    }
+
+    pub fn iter(&self) -> EvidenceIterator {
+        EvidenceIterator { current_ev: self.handle() }
     }
 
     pub fn handle(&self) -> HANDLE {
         return self.evidence_handle
     }
 
-    pub fn open(&self) -> Option<Volume> {
+    pub fn open(&self) -> Result<Volume, XwfError> {
         let handle = (get_raw_api!().open_ev_obj)(self.evidence_handle, 0);
         Volume::new(handle)
     }
@@ -84,31 +112,19 @@ impl Evidence {
         Evidence::new(first_ev_obj)
     }
 
-    pub fn get_next_evidence(&self) -> Option<Evidence> {
-        let next_ev_obj = (get_raw_api!().get_next_ev_obj)(self.evidence_handle, null_mut());
-
-        if next_ev_obj == null_mut() {
-            return None;
-        }
-
-        Evidence::new(next_ev_obj)
-    }
-
-
-    pub fn get_evidences() -> Vec<Evidence> {
+    pub fn get_evidences() -> Option<Vec<Evidence>> {
         let mut ret: Vec<Evidence> = Vec::new();
         let mut parent_ids: Vec<u32> = Vec::new();
 
-        let mut ev = Evidence::get_first_evidence();
-        while ev.is_some() {
-            let evidence = ev.unwrap();
+        let mut ev_iterator = Evidence::get_first_evidence()?.iter();
+
+        while let Some(evidence) = ev_iterator.next() {
+    
             let opt_parent_id = evidence.get_parent_id();
             if opt_parent_id.is_some() {
                 parent_ids.push(opt_parent_id.unwrap())
             }
             ret.push(evidence);
-
-            ev = ret.last().unwrap().get_next_evidence()
         }
 
         for pid in parent_ids {
@@ -119,14 +135,14 @@ impl Evidence {
             }
         }
 
-        ret
+        Some(ret)
        }
 
     pub fn close(&self) {
         (get_raw_api!().close_ev_obj)(self.evidence_handle);
     }
 
-    pub fn get_report_table_assocs(&self, sorted: bool) -> Option<ReportTableMap> {
+    pub fn get_report_table_assocs(&self, sorted: bool) -> Result<ReportTableMap, XwfError> {
         let mut flags: LONG = 0;
         let mut num_pairs: LONG = 0;
         let mut ret = ReportTableMap::new();
@@ -135,11 +151,11 @@ impl Evidence {
         let ptr_list = (get_raw_api!().get_ev_obj_report_table_assocs)(self.evidence_handle,flags,&mut num_pairs) as *const u8;
 
         if ptr_list == null() {
-            return None;
+            return Err(XwfError::XwfFunctionCallFailed);
         }
 
         ReportTableListItem::insert_to_map(ptr_list, num_pairs, &mut ret);
-        Some(ret)
+        Ok(ret)
     }
 
     pub fn get_id(&self) -> u32 {

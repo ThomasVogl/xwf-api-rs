@@ -7,7 +7,8 @@ pub enum XwfError {
     InputHandleIsNull,
     XwfFunctionCallFailed,
     FailedToGetObjectHandle,
-    FailedToSelectVolume
+    FailedToSelectVolume,
+    InvalidEnumValue,
 }
 
 
@@ -19,6 +20,7 @@ impl Display for XwfError {
             XwfError::XwfFunctionCallFailed => write!(f, "XWF function call failed"),
             XwfError::FailedToGetObjectHandle => write!(f, "failed to get object handle"),
             XwfError::FailedToSelectVolume => write!(f, "failed to select volume"),
+            XwfError::InvalidEnumValue => write!(f, "invalid/undefined enum value"),
         }
     }
 }
