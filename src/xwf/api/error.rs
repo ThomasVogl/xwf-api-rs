@@ -9,6 +9,8 @@ pub enum XwfError {
     FailedToGetObjectHandle,
     FailedToSelectVolume,
     InvalidEnumValue,
+    InvalidItemSize,
+    ReadItemDataFailed,
 }
 
 
@@ -21,6 +23,8 @@ impl Display for XwfError {
             XwfError::FailedToGetObjectHandle => write!(f, "failed to get object handle"),
             XwfError::FailedToSelectVolume => write!(f, "failed to select volume"),
             XwfError::InvalidEnumValue => write!(f, "invalid/undefined enum value"),
+            XwfError::InvalidItemSize => write!(f, "invalid item size"),
+            XwfError::ReadItemDataFailed => write!(f, "failed to read item data"),
         }
     }
 }

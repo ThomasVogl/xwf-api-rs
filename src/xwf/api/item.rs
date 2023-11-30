@@ -247,8 +247,13 @@ impl ItemHandle {
         wchar_ptr_to_string(self.get_prop(PropType::PointerFilePath) as LPWSTR)
     }
 
-    pub fn get_logical_size(&self) -> i64 {
-        self.get_prop(PropType::LogicalSize)
+    pub fn get_logical_size(&self) -> Result<i64, XwfError> {
+        let size = self.get_prop(PropType::LogicalSize);
+        let size =  if size > 0 {
+                return Ok(size);
+        } else {
+            return Err(XwfError::InvalidItemSize);
+        };
     }
 
     pub fn get_physical_size(&self) -> i64 {
@@ -262,14 +267,11 @@ impl ItemHandle {
         &self.item
     }
 
-    pub fn read(&self) -> Result<Vec<u8>, ()>{
-        let size = self.get_logical_size();
+    pub fn read(&self) -> Result<Vec<u8>, XwfError>{
+        let size = self.get_logical_size()?;
 
         let mut num_bytes_to_read = size;
 
-        if size <= 0 {
-            return Err(());
-        }
 
         let mut ret: Vec<u8> = Vec::with_capacity(size as usize);
         ret.resize(size as usize, 0u8);
@@ -292,7 +294,7 @@ impl ItemHandle {
             let r = (get_raw_api!().read)(self.item_handle, bytes_read, buf_ptr, chunk_size as DWORD);
 
             if r<= 0 {
-                return Err(());
+                return Err(XwfError::ReadItemDataFailed);
             }
 
             num_bytes_to_read-=r as i64;
