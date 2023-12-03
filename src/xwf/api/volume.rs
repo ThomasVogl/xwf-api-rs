@@ -108,6 +108,7 @@ impl Volume {
             volume_handle
         })
     }
+    
 
 
     pub fn handle(&self) ->  HANDLE { self.volume_handle }
@@ -121,7 +122,7 @@ impl Volume {
     pub fn select(&self) -> Result<i32, XwfError> {
         let ret = (get_raw_api!().select_volume_snapshot)(self.volume_handle);
         if ret < 0 {
-            return Err(XwfError::XwfFunctionCallFailed);
+            return Err(XwfError::XwfFunctionCallFailed("select_volume_snapshot"));
         }
         Ok(ret)
     }
@@ -136,7 +137,7 @@ impl Volume {
         Some(HashType::try_from(ret).unwrap())
     }
 
-    pub fn set_hash_type(&self, hash_type: HashType, set_secondary: bool) -> Result<(), ()>{
+    pub fn set_hash_type(&self, hash_type: HashType, set_secondary: bool) -> Result<(), XwfError>{
 
         let mut prop_type = VsPropType::SetHashType1;
         if set_secondary { prop_type = VsPropType::SetHashType2; }
@@ -146,7 +147,7 @@ impl Volume {
         let ret = (get_raw_api!().get_vs_prop)(prop_type as LONG, _buf_hash_type.to_le_bytes().as_ptr() as PVOID);
 
         if ret < 0 {
-            Err(())
+            Err(XwfError::XwfFunctionCallFailed("get_vs_prop"))
         } else {
             Ok(())
         }

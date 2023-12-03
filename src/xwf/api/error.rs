@@ -5,10 +5,10 @@ use std::fmt::{Display, Formatter};
 pub enum XwfError {
     InvalidInputArgument,
     InputHandleIsNull,
-    XwfFunctionCallFailed,
+    XwfFunctionCallFailed(&'static str),
     FailedToGetObjectHandle,
     FailedToSelectVolume,
-    InvalidEnumValue,
+    InvalidEnumValue((&'static str, i64)),
     InvalidItemSize,
     ReadItemDataFailed,
 }
@@ -19,10 +19,10 @@ impl Display for XwfError {
         match self {
             XwfError::InvalidInputArgument => write!(f, "invalid input for argument"),
             XwfError::InputHandleIsNull => write!(f, "input handle is null"),
-            XwfError::XwfFunctionCallFailed => write!(f, "XWF function call failed"),
+            XwfError::XwfFunctionCallFailed(func) => write!(f, "XWF function call {} failed", func),
             XwfError::FailedToGetObjectHandle => write!(f, "failed to get object handle"),
             XwfError::FailedToSelectVolume => write!(f, "failed to select volume"),
-            XwfError::InvalidEnumValue => write!(f, "invalid/undefined enum value"),
+            XwfError::InvalidEnumValue(x) => write!(f, "invalid/undefined enum value {} for type {}", x.1, x.0),
             XwfError::InvalidItemSize => write!(f, "invalid item size"),
             XwfError::ReadItemDataFailed => write!(f, "failed to read item data"),
         }

@@ -46,6 +46,7 @@ pub type FnXwfGetItemInformation = extern "stdcall" fn(
 #[allow(non_snake_case, unused_variables)]
 pub type FnXwfSetItemInformation = extern "stdcall" fn(
     nItemID: LONG,
+    nInfoType: LONG,
     nInfoValue: __int64
 ) -> BOOL;
 
@@ -208,3 +209,12 @@ pub type FnXwfHideProgress = extern "stdcall" fn(
 #[allow(non_snake_case, unused_variables)]
 pub type FnXwfShouldStop = extern "stdcall" fn(
 ) -> BOOL;
+
+
+#[allow(non_snake_case, unused_variables)]
+pub type FnXwfGetUserInput = extern "stdcall" fn(
+    lpMessage: LPWSTR,
+    lpBuffer: LPWSTR,
+    nBufferLen: DWORD,
+    nFlags: DWORD
+) -> __int64;

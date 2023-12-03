@@ -151,7 +151,7 @@ impl Evidence {
         let ptr_list = (get_raw_api!().get_ev_obj_report_table_assocs)(self.evidence_handle,flags,&mut num_pairs) as *const u8;
 
         if ptr_list == null() {
-            return Err(XwfError::XwfFunctionCallFailed);
+            return Err(XwfError::XwfFunctionCallFailed("get_ev_obj_report_table_assocs"));
         }
 
         ReportTableListItem::insert_to_map(ptr_list, num_pairs, &mut ret);

@@ -1,6 +1,8 @@
 use std::ops::Deref;
 use bitflags::bitflags;
 
+use super::api::error::XwfError;
+
 bitflags! {
     pub struct ItemInfoFlags: u64 {
         const IsDirectory                           = 0x00000001;
@@ -45,6 +47,8 @@ bitflags! {
         // The source may set any bits
         const _ = !0;
     }
+
+    
 
     pub struct ItemInfoAttributes: i64 {
         const WinAttrReadOnly           = 0x00000001; //Windows attribute read only
@@ -284,6 +288,47 @@ pub enum PropType {
     NumberOfDataWindow      = 16,
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub enum ItemInfoClassification {
+    NormalFile                            = 0x00, //normal file
+    HfsResourceFork                       = 0x04, //HFS resource fork
+    NtfsAlternateDataStream               = 0x08, //NTFS alternate data stream
+    NtfsNonDirectoryIndex                 = 0x0A, //NTFS non-directory index
+    NtfsBitmapAttribute                   = 0x0B, //NTFS bitmap attribute
+    NtfsGeneralLoggedUtilityStream        = 0x10, //NTFS general logged utility stream
+    NtfsEfsLoggedUtilityStream            = 0x11, //NTFS EFS logged utility stream
+    EmailRelated                          = 0xF5, //e-mail related
+    Excerpt                               = 0xF6, //excerpt
+    ManuallyAttached                      = 0xF7, //manually attached
+    VideoStill                            = 0xF8, //video still
+    EmailAttachment                       = 0xF9, //e-mail attachment
+    EmailMessage                          = 0xFA, //e-mail message
+    IdnxRecordRemnant                     = 0xFD, //INDX record remnant
+}
+
+impl TryFrom<i64> for ItemInfoClassification {
+    type Error = XwfError;
+
+    fn try_from(value: i64) -> Result<Self, Self::Error> {
+        let value = value & 0xFF;
+        match value {
+            x if x == Self::NormalFile as i64                       => Ok(Self::NormalFile),
+            x if x == Self::HfsResourceFork as i64                  => Ok(Self::HfsResourceFork),
+            x if x == Self::NtfsAlternateDataStream as i64          => Ok(Self::NtfsAlternateDataStream),
+            x if x == Self::NtfsBitmapAttribute as i64              => Ok(Self::NtfsBitmapAttribute),
+            x if x == Self::NtfsGeneralLoggedUtilityStream as i64   => Ok(Self::NtfsGeneralLoggedUtilityStream),
+            x if x == Self::NtfsEfsLoggedUtilityStream as i64       => Ok(Self::NtfsEfsLoggedUtilityStream),
+            x if x == Self::EmailRelated as i64                     => Ok(Self::EmailRelated),
+            x if x == Self::Excerpt as i64                          => Ok(Self::Excerpt),
+            x if x == Self::VideoStill as i64                       => Ok(Self::VideoStill),
+            x if x == Self::EmailAttachment as i64                  => Ok(Self::EmailAttachment),
+            x if x == Self::EmailMessage as i64                     => Ok(Self::EmailMessage),
+            x if x == Self::IdnxRecordRemnant as i64                => Ok(Self::IdnxRecordRemnant),
+            _ => Err(XwfError::InvalidEnumValue(("ItemInfoClassification", value)))
+        }
+    }
+}
+
 pub enum EvObjPropType {
     ObjNumber           = 0,	//WORD	(unused)	ev. obj. number (simply reflects the order of evidence objects in the case tree and thus may change)
     ObjId               = 1,	//DWORD	(unused)	ev. obj. ID (used to identify parent-child relationships between evidence objects)
@@ -398,10 +443,10 @@ pub enum FileFormatConsistency {
 }
 
 impl TryFrom<i32> for FileFormatConsistency {
-    type Error = ();
+    type Error = XwfError;
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         if value < 0 {
-            return Err(());
+            return Err(XwfError::InvalidEnumValue(("FileFormatConsistency", value as i64)));
         }
 
         let val = (value & 0xFF00) >> 8;
@@ -409,7 +454,7 @@ impl TryFrom<i32> for FileFormatConsistency {
             x if x == FileFormatConsistency::Ok as i32 => Ok(FileFormatConsistency::Ok),
             x if x == FileFormatConsistency::Irregular as i32 => Ok(FileFormatConsistency::Irregular),
             x if x == FileFormatConsistency::Unknown as i32 => Ok(FileFormatConsistency::Unknown),
-            _ => Err(())
+            _ => Err(XwfError::InvalidEnumValue(("FileFormatConsistency", value as i64)))
         }
     }
 }
@@ -426,11 +471,11 @@ pub enum FileTypeStatus {
 
 
 impl TryFrom<i32> for FileTypeStatus {
-    type Error = ();
+    type Error = XwfError;
 
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         if value < 0 {
-            return Err(());
+            return Err(XwfError::InvalidEnumValue(("FileTypeStatus", value as i64)));
         }
         let val = value & 0xFF;
         match val {
@@ -441,7 +486,7 @@ impl TryFrom<i32> for FileTypeStatus {
             x if x == FileTypeStatus::NotConfirmed as i32 => Ok(FileTypeStatus::NotConfirmed),
             x if x == FileTypeStatus::NewlyIdentified as i32 => Ok(FileTypeStatus::NewlyIdentified),
             x if x == FileTypeStatus::MismatchDetected as i32 => Ok(FileTypeStatus::MismatchDetected),
-            _ => Err(())
+            _ => Err(XwfError::InvalidEnumValue(("FileTypeStatus", val as i64)))
         }
     }
 }

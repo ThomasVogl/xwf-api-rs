@@ -14,7 +14,9 @@ use crate::xwf::api::evidence::Evidence;
 use crate::xwf::api::traits::NativeHandle;
 use crate::xwf::raw_api::{RAW_API};
 use crate::xwf::api::volume::{HashType, Volume};
-use crate::xwf::xwf_types::{AddReportTableFlags, FileFormatConsistency, ItemInfoFlags, ItemTypeFlags, OpenItemFlags, PropType, FileTypeStatus, FileTypeCategory};
+use crate::xwf::xwf_types::{AddReportTableFlags, FileFormatConsistency, ItemInfoFlags, ItemTypeFlags, OpenItemFlags, PropType, FileTypeStatus, FileTypeCategory, ItemInfoClassification};
+
+const CHUNK_SIZE: i64 = 10485760;
 
 #[derive(Copy, Clone, Debug)]
 pub struct Item {
@@ -26,6 +28,21 @@ pub struct Item {
 pub struct UniqueItemId {
     pub item_id: i32,
     pub evidence_id: u32,
+}
+
+impl From<i64> for UniqueItemId {
+    fn from(value: i64) -> Self {
+        UniqueItemId { 
+            item_id: (value & 0x00000000FFFFFFFFi64) as i32 , 
+            evidence_id: (value >> 32) as u32 
+        }
+    }
+}
+
+impl Into<i64> for UniqueItemId {
+    fn into(self) -> i64 {
+        (self.evidence_id as i64) << 32 | (self.item_id as i64)
+    }
 }
 
 impl Display for UniqueItemId {
@@ -119,6 +136,18 @@ impl Item {
         }
     }
 
+    pub fn set_item_info_flags(&self, flags: ItemInfoFlags, remove_flags: bool) -> Result<(), XwfError> {
+        let n_info_type = if remove_flags { 65 } else { 64 };
+
+        let result = (get_raw_api!().set_item_information)(self.item_id, n_info_type, flags.bits() as i64);
+
+        if result != 0 {
+            Ok(())
+        } else {
+            Err(XwfError::XwfFunctionCallFailed("set_item_information"))
+        }
+    }
+
     pub fn get_item_info_flags(&self) -> Result<ItemInfoFlags, XwfError> {
         let mut success: Box<BOOL> = Box::new(1);
         let success_ptr: *mut BOOL = &mut *success;
@@ -127,7 +156,20 @@ impl Item {
         if *success != 0 {
             Ok(ItemInfoFlags::from_bits_truncate(result as u64))
         } else {
-            Err(XwfError::XwfFunctionCallFailed)
+            Err(XwfError::XwfFunctionCallFailed("get_item_information"))
+        }
+    }
+
+
+    pub fn get_item_info_classification(&self) -> Result<ItemInfoClassification, XwfError> {
+        let mut success: Box<BOOL> = Box::new(1);
+        let success_ptr: *mut BOOL = &mut *success;
+        let result = (get_raw_api!().get_item_information)(self.item_id, 0x5, success_ptr);
+
+        if *success != 0 {
+            ItemInfoClassification::try_from(result)
+        } else {
+            Err(XwfError::XwfFunctionCallFailed("get_item_information"))
         }
     }
 
@@ -170,8 +212,8 @@ impl Item {
         let status = (get_raw_api!().get_item_type)(self.item_id, buf.as_mut_ptr(), buf_and_flags);
 
         Ok(
-            (   FileTypeStatus::try_from(status).map_err(|e| XwfError::InvalidEnumValue)?,
-                FileFormatConsistency::try_from(status).map_err(|e| XwfError::InvalidEnumValue)?,
+            (   FileTypeStatus::try_from(status)?,
+                FileFormatConsistency::try_from(status)?,
                 wchar_str_to_string(buf.as_slice())
             ),
            )
@@ -185,12 +227,12 @@ impl Item {
         let status = (get_raw_api!().get_item_type)(self.item_id, buf.as_mut_ptr(), buf_and_flags);
 
         if buf[0] == 0 {
-            return Err(XwfError::XwfFunctionCallFailed);
+            return Err(XwfError::XwfFunctionCallFailed("get_item_type"));
         }
 
         Ok(
-            (   FileTypeStatus::try_from(status).map_err(|e| XwfError::InvalidEnumValue)?,
-                FileFormatConsistency::try_from(status).map_err(|e| XwfError::InvalidEnumValue)?,
+            (   FileTypeStatus::try_from(status)?,
+                FileFormatConsistency::try_from(status)?,
                 FileTypeCategory::from(wchar_str_to_string(buf.as_slice()))
             ),
         )
@@ -281,7 +323,7 @@ impl ItemHandle {
             let bytes_read = size-num_bytes_to_read;
             let mut buf_ptr: *mut u8 = null_mut();
 
-            let mut chunk_size = 1024 * 1024;
+            let mut chunk_size = CHUNK_SIZE;
 
             if chunk_size > num_bytes_to_read {
                 chunk_size = num_bytes_to_read;

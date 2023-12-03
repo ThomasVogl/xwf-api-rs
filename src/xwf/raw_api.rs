@@ -43,7 +43,8 @@ pub struct RawApi {
     pub set_progress_description: FnXwfSetProgressDescription,
     pub set_progress_percentage: FnXwfSetProgressPercentage,
     pub hide_progress: FnXwfHideProgress,
-    pub should_stop: FnXwfShouldStop
+    pub should_stop: FnXwfShouldStop,
+    pub get_user_input: FnXwfGetUserInput
 }
 
 impl RawApi {
@@ -105,6 +106,7 @@ impl RawApi {
                set_progress_percentage: RawApi::load_method(h_module, cstr!(XWF_SetProgressPercentage))?,
                hide_progress: RawApi::load_method(h_module, cstr!(XWF_HideProgress))?,
                should_stop: RawApi::load_method(h_module, cstr!(XWF_ShouldStop))?,
+               get_user_input: RawApi::load_method(h_module, cstr!(XWF_GetUserInput))?
 
             })
         }

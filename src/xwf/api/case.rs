@@ -67,33 +67,33 @@ impl Case {
 
         let creation = (get_raw_api!().get_case_prop)(null_mut(), 2, null_mut(), 0);
         if creation <= 0 {
-            return Err(XwfError::XwfFunctionCallFailed);
+            return Err(XwfError::XwfFunctionCallFailed("get_case_prop"));
         }
 
-        let creation_date: DateTime<Utc> = DateTime::from_timestamp(creation / 10000000 - 11644473600, 0).ok_or(XwfError::XwfFunctionCallFailed)?;
+        let creation_date: DateTime<Utc> = DateTime::from_timestamp(creation / 10000000 - 11644473600, 0).ok_or(XwfError::InvalidInputArgument)?;
         
         let buf_len = (get_raw_api!().get_case_prop)(null_mut(), 3, buf.as_mut_ptr() as LPVOID, buf.len() as LONG);
         if buf_len < 0 {
-            return Err(XwfError::XwfFunctionCallFailed);
+            return Err(XwfError::XwfFunctionCallFailed("get_case_prop"));
         }
         let examiner: String = wchar_str_to_string(&buf);
 
         let buf_len = (get_raw_api!().get_case_prop)(null_mut(), 1, buf.as_mut_ptr() as LPVOID, buf.len() as LONG);
         if buf_len < 0 {
-            return Err(XwfError::XwfFunctionCallFailed);
+            return Err(XwfError::XwfFunctionCallFailed("get_case_prop"));
         }
         let title = wchar_str_to_string(&buf);
 
         let buf_len = (get_raw_api!().get_case_prop)(null_mut(), 5, buf.as_mut_ptr() as LPVOID, buf.len() as LONG);
         if buf_len < 0 {
-            return Err(XwfError::XwfFunctionCallFailed);
+            return Err(XwfError::XwfFunctionCallFailed("get_case_prop"));
         }
 
         let file = wchar_str_to_string(&buf);
 
         let buf_len = (get_raw_api!().get_case_prop)(null_mut(), 6, buf.as_mut_ptr() as LPVOID, buf.len() as LONG);
         if buf_len < 0 {
-            return Err(XwfError::XwfFunctionCallFailed);
+            return Err(XwfError::XwfFunctionCallFailed("get_case_prop"));
         }
         let dir = wchar_str_to_string(&buf);
 

@@ -1,9 +1,12 @@
 use std::io::Write;
+use std::ptr::null_mut;
 use bitflags::Flags;
 use crate::get_raw_api;
 use crate::xwf::api::util::{buf_to_wchar_cstr, string_to_wchar_cstr};
 use crate::xwf::xwf_types::{OutputMessageFlags, ProgressFlags};
 use crate::xwf::raw_api::RAW_API;
+
+use super::util::wchar_ptr_to_string;
 
 pub struct Application {
     output_buffer: Vec<u8>
@@ -22,6 +25,27 @@ impl Application {
 
     pub fn output_string(msg: String, flags: OutputMessageFlags) {
         (get_raw_api!().output_message)(string_to_wchar_cstr(&msg) ,flags.bits())
+    }
+
+    pub fn get_user_input_integer(msg: String) -> Option<u64> {
+        let ret = (get_raw_api!().get_user_input)(string_to_wchar_cstr(&msg) , null_mut(),  0, 0x1);
+        if ret < 0 {
+            None
+        } else {
+            Some(ret as u64)
+        }
+    }
+
+    pub fn get_user_input_str(msg: String, allow_empty: bool) -> Option<String> {
+        let flags = if allow_empty {0x2} else {0x0};
+        let mut w_buf = [0u16;65535];
+        let ret: i64 =  (get_raw_api!().get_user_input)(string_to_wchar_cstr(&msg) , w_buf.as_mut_ptr(),  w_buf.len() as u32, flags);
+        if ret > 0 {
+            Some(wchar_ptr_to_string(w_buf.as_mut_ptr()))
+        } else {
+            None
+        }
+        
     }
 
     pub fn show_progress(caption: String, flags: ProgressFlags) {
