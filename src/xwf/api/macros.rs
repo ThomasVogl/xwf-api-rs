@@ -138,10 +138,12 @@ macro_rules! export_xt_process_item {
             let res = get_lib_instance!($variable, $variable_type).xt_process_item(item);
 
             match res {
-                Ok(ret) => { return ret.into(); },
+                Ok(ret) => {
+                     ret.into() 
+                },
                 Err(e) => {
                     warn!("{}", e);
-                    XtProcessItemReturn::Ok.into();
+                    XtProcessItemReturn::Ok.into()
                 }
             }
         }
