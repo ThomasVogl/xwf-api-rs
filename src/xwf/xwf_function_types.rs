@@ -106,6 +106,15 @@ pub type FnXwfGetReportTableInfo = extern "stdcall" fn(
     lpOptional: PLONG
 ) -> LPVOID;
 
+
+#[allow(non_snake_case, unused_variables)]
+pub type FnXwfGetReportTableAssocs = extern "stdcall" fn(
+    nItemID: LONG,
+    lpBuffer: LPWSTR,
+    nBufferLen: LONG
+) -> DWORD;
+
+
 #[allow(non_snake_case, unused_variables)]
 pub type FnXwfGetEvObjReportTableAssocs = extern "stdcall" fn(
     hEvidence: HANDLE,

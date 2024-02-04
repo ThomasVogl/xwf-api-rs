@@ -8,12 +8,13 @@ edition = "2021"
 [dependencies]
 cstr = "0.2.11"
 winapi = { version="0.3.9", features = ["consoleapi", "minwindef", "ntdef", "libloaderapi"] }
-bitflags = { version = "2.4.0", features = [] }
+bitflags = { version = "2.4.0", features = ["serde"] }
 once_cell = "1.18.0"
 hex = "0.4.3"
 simplelog = "0.12.1"
 log = "0.4.20"
-chrono = "0.4.31"
+chrono = {  version = "0.4.31", features = ["serde"] }
+serde = { version = "1.0.190", features = ["derive"] }
 
 [lib]
 crate-type = ["lib"]

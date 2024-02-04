@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::ptr::{null_mut};
 use winapi::shared::minwindef::{DWORD, LPVOID};
 use winapi::shared::ntdef::{HANDLE, LONG, LPWSTR, PVOID};
@@ -5,6 +6,7 @@ use crate::get_raw_api;
 use crate::xwf::api::util::{wchar_ptr_to_string, wchar_str_to_string};
 
 use crate::xwf::api::error::XwfError;
+use crate::xwf::api::item::Item;
 use crate::xwf::xwf_types::PropType;
 use crate::xwf::raw_api::RAW_API;
 
@@ -108,7 +110,6 @@ impl Volume {
             volume_handle
         })
     }
-    
 
 
     pub fn handle(&self) ->  HANDLE { self.volume_handle }
@@ -171,6 +172,36 @@ impl Volume {
 
     pub fn close(&self) {
         (get_raw_api!().close)(self.volume_handle);
+    }
+
+
+    pub fn get_child_items_with_pred<F>(&self, items: &Vec<u32>,  mut pred: F) -> Result<HashMap<u32, Vec<u32>>, XwfError>
+        where
+            F: FnMut(Item) -> Result<bool, XwfError>
+    {
+
+        let mut ret: HashMap<u32, Vec<u32>> = HashMap::new();
+
+        for i in items {
+            ret.insert(*i, Vec::new());
+        }
+
+        self.select()?;
+
+        for i in 0..self.get_item_count() {
+            let item = Item::new(i as i32);
+            match item.get_parent_item() {
+                Some(parent_item) => {
+
+                    if items.contains(&(parent_item.item_id as u32)) && pred(item)? {
+                        ret.get_mut(&(parent_item.item_id as u32)).unwrap().push(i);
+                    }
+                },
+                None => {},
+            }
+
+        }
+        Ok(ret)
     }
 }
 

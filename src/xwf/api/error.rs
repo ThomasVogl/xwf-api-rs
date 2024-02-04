@@ -1,5 +1,6 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
+use std::io;
 
 #[derive(Debug)]
 pub enum XwfError {
@@ -11,6 +12,10 @@ pub enum XwfError {
     InvalidEnumValue((&'static str, i64)),
     InvalidItemSize,
     ReadItemDataFailed,
+    HashValueNotAvailable,
+    GivenBufferToSmallForContent,
+    NoEvidenceAvaible,
+    IoError(io::Error),
 }
 
 
@@ -25,6 +30,10 @@ impl Display for XwfError {
             XwfError::InvalidEnumValue(x) => write!(f, "invalid/undefined enum value {} for type {}", x.1, x.0),
             XwfError::InvalidItemSize => write!(f, "invalid item size"),
             XwfError::ReadItemDataFailed => write!(f, "failed to read item data"),
+            XwfError::HashValueNotAvailable => write!(f, "expected hash value is not available"),
+            XwfError::GivenBufferToSmallForContent => write!(f, "given buffer to XWF was to small for the content"),
+            XwfError::NoEvidenceAvaible => write!(f, "expected an evidence for processing"),
+            XwfError::IoError(e) => write!(f, "io error occurred: {}", e),
         }
     }
 }

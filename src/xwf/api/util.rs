@@ -24,6 +24,14 @@ pub fn wchar_str_to_string(bytes: &[u16]) -> String {
     }
 }
 
+pub fn wchar_str_to_string_expect_term(bytes: &[u16]) -> Option<String> {
+    let mut iter = bytes.split(|c| *c == 0u16);
+    match iter.next() {
+        Some(slice) => Some(OsString::from_wide(slice).into_string().unwrap()),
+        None => None
+    }
+}
+
 
 pub fn wchar_ptr_to_string(mut ptr: LPWSTR) -> String {
     let mut vec_u16: Vec<u16> = Vec::new();

@@ -2,11 +2,11 @@ use std::collections::HashMap;
 use std::ptr::{null, null_mut};
 use winapi::shared::minwindef::DWORD;
 use winapi::shared::ntdef::{HANDLE, LONG};
-use winapi::um::winnt::PVOID;
+use winapi::um::winnt::{LPWSTR, PVOID};
 use crate::get_raw_api;
 use crate::xwf::api::volume::Volume;
 use crate::xwf::api::error::XwfError;
-use crate::xwf::api::util::wchar_str_to_string;
+use crate::xwf::api::util::{wchar_ptr_to_string, wchar_str_to_string};
 use crate::xwf::raw_api::RAW_API;
 use crate::xwf::xwf_types::{EvObjPropFlags, EvObjPropType, PropType};
 
@@ -142,7 +142,7 @@ impl Evidence {
         (get_raw_api!().close_ev_obj)(self.evidence_handle);
     }
 
-    pub fn get_report_table_assocs(&self, sorted: bool) -> Result<ReportTableMap, XwfError> {
+    pub fn get_report_table_assocs(&self, sorted: bool) -> Option<ReportTableMap> {
         let mut flags: LONG = 0;
         let mut num_pairs: LONG = 0;
         let mut ret = ReportTableMap::new();
@@ -151,11 +151,11 @@ impl Evidence {
         let ptr_list = (get_raw_api!().get_ev_obj_report_table_assocs)(self.evidence_handle,flags,&mut num_pairs) as *const u8;
 
         if ptr_list == null() {
-            return Err(XwfError::XwfFunctionCallFailed("get_ev_obj_report_table_assocs"));
+            return None;
         }
 
         ReportTableListItem::insert_to_map(ptr_list, num_pairs, &mut ret);
-        Ok(ret)
+        Some(ret)
     }
 
     pub fn get_id(&self) -> u32 {
@@ -193,10 +193,33 @@ impl Evidence {
         EvObjPropFlags::from_bits_truncate(ret as u32)
     }
 
-    pub fn get_name(&self) -> String {
+    pub fn get_name(&self) -> Result<String, XwfError> {
         let mut buf = [0u16; 256];
         let ret = (get_raw_api!().get_ev_obj_prop)(self.evidence_handle, EvObjPropType::AbbrevObjTitle as DWORD, buf.as_mut_ptr() as PVOID);
-        wchar_str_to_string(&buf)
+        if ret == -1 {
+            Err(XwfError::XwfFunctionCallFailed("get_ev_obj_prop"))
+        } else {
+            Ok(wchar_str_to_string(&buf))
+        }
+    }
+
+    pub fn get_description(&self) -> Option<String> {
+        let ret = (get_raw_api!().get_ev_obj_prop)(self.evidence_handle, EvObjPropType::Description as DWORD, null_mut() as PVOID);
+        if ret == -1 || ret == 0 {
+            None
+        } else {
+            Some(wchar_ptr_to_string(ret as LPWSTR))
+        }
+
+    }
+
+    pub fn get_comments(&self) -> Option<String> {
+        let ret = (get_raw_api!().get_ev_obj_prop)(self.evidence_handle, EvObjPropType::ExaminerComments as DWORD, null_mut() as PVOID);
+        if ret == -1 || ret == 0 {
+            None
+        } else {
+            Some(wchar_ptr_to_string(ret as LPWSTR))
+        }
     }
 
     pub fn child(&self) -> Option<Evidence> {

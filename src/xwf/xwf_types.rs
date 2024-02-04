@@ -1,9 +1,14 @@
 use std::ops::Deref;
-use bitflags::bitflags;
+use bitflags::{bitflags, Flags};
+use chrono::{DateTime, Local, NaiveDateTime, Utc};
+use serde::{Deserialize, Serialize};
 
 use super::api::error::XwfError;
 
 bitflags! {
+
+    #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+    #[serde(transparent)]
     pub struct ItemInfoFlags: u64 {
         const IsDirectory                           = 0x00000001;
         const HasChildObjects                       = 0x00000002;
@@ -208,6 +213,13 @@ bitflags! {
         const _ = !0;
     }
 
+
+}
+
+impl Default for ItemInfoFlags {
+    fn default() -> Self {
+        ItemInfoFlags::empty()
+    }
 }
 
 pub enum XtPrepareNegativeReturn {
@@ -366,6 +378,27 @@ pub enum XtPrepareOpType {
     EventListContextMenu            = 6 // event list context menu command invoked (since v20.3 SR-3)
 }
 
+pub enum XwfItemInfoTypes {
+    OrigId                  = 1,
+    Attr                    = 2,
+    Flags                   = 3,
+    Deletion                = 4,
+    Classification          = 5,
+    LinkCount               = 6,
+    ColorAnalysis           = 7,
+    PixelIndex              = 8,
+    FileCount               = 11,
+    EmbeddedOffset          = 16,
+    CreationTime            = 32,
+    ModificationTime        = 33,
+    LastAccessTime          = 34,
+    EntryModificationTime   = 35,
+    DeletionTime            = 36,
+    InternalCreationTime    = 37
+
+}
+
+
 pub struct XtLicenseInfo {}
 #[derive(Debug, PartialEq, Eq)]
 pub enum XtInitReturn {
@@ -435,11 +468,12 @@ impl std::convert::TryFrom<u32> for XtPrepareOpType {
         }
     }
 }
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum FileFormatConsistency {
     Unknown = 0,
     Ok = 1,
     Irregular = 2,
+    NotDocumented = 3,
 }
 
 impl TryFrom<i32> for FileFormatConsistency {
@@ -454,11 +488,12 @@ impl TryFrom<i32> for FileFormatConsistency {
             x if x == FileFormatConsistency::Ok as i32 => Ok(FileFormatConsistency::Ok),
             x if x == FileFormatConsistency::Irregular as i32 => Ok(FileFormatConsistency::Irregular),
             x if x == FileFormatConsistency::Unknown as i32 => Ok(FileFormatConsistency::Unknown),
+            x if x == FileFormatConsistency::NotDocumented as i32 => Ok(FileFormatConsistency::NotDocumented),
             _ => Err(XwfError::InvalidEnumValue(("FileFormatConsistency", value as i64)))
         }
     }
 }
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum FileTypeStatus {
     NotVerified = 0,
     TooSmall = 1,
@@ -491,7 +526,7 @@ impl TryFrom<i32> for FileTypeStatus {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum FileTypeCategory {
     Picture,
     Word,
@@ -573,6 +608,13 @@ impl From<String> for FileTypeCategory {
             _ => FileTypeCategory::Other
         }
     }
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub enum XwfDateTime {
+    Utc(DateTime<Utc>),            //timestamp is given in UTC
+    Local(DateTime<Local>),        //timestamp is given in local time zone
+    NoTimezone(NaiveDateTime),     //timestamp has no timezone info
 }
 
 
