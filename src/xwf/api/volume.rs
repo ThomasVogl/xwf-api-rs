@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+use std::collections::vec_deque::Iter;
+use std::collections::{HashMap, HashSet};
 use std::ptr::{null_mut};
 use winapi::shared::minwindef::{DWORD, LPVOID};
 use winapi::shared::ntdef::{HANDLE, LONG, LPWSTR, PVOID};
@@ -20,9 +21,9 @@ enum VsPropType {
 }
 
 pub enum VolumeNameType {
-    SHORT =  1,
+    SHORT =  3,
     NORMAL = 2,
-    LONG =   3
+    LONG =   1
 }
 macro_rules! back_to_enum {
     ($(#[$meta:meta])* $vis:vis enum $name:ident {
@@ -93,6 +94,34 @@ impl HashType {
             HashType::Tiger160 => 20,
             HashType::Tiger192 => 24,
         }
+    }
+}
+
+pub struct ItemIterator {
+    idx: u32,
+    max: u32
+}
+
+impl ItemIterator {
+    pub fn create(min:u32, max: u32) -> Self {
+        Self {
+            idx: min,
+            max: max
+        }
+    }
+}
+
+impl Iterator for ItemIterator {
+    type Item = Item;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.idx < self.max {
+            let i = self.idx as i32;
+            self.idx+=1;
+            Some(Item::new(i))
+        } else {
+            None
+        }
+        
     }
 }
 
@@ -174,32 +203,108 @@ impl Volume {
         (get_raw_api!().close)(self.volume_handle);
     }
 
+    pub fn iter_mut(&mut self) -> Result<ItemIterator, XwfError> {
+        self.select()?;
+        Ok(ItemIterator::create(0, self.get_item_count()))
+    }
 
-    pub fn get_child_items_with_pred<F>(&self, items: &Vec<u32>,  mut pred: F) -> Result<HashMap<u32, Vec<u32>>, XwfError>
+    pub fn iter(&self) -> Result<ItemIterator, XwfError> {
+        self.select()?;
+        Ok(ItemIterator::create(0, self.get_item_count()))
+    }
+
+    pub fn get_parent_dirs(&self, items: &Vec<u32>) -> HashSet<u32> {
+        items.iter()
+        .map(|i: &u32| Item::new(*i as i32).get_parent_dir())
+        .filter(|i| i.is_some())
+        .map(|i| i.unwrap().item_id as u32)
+        .collect()
+    }
+
+    pub fn get_parent_items(&self, items: &HashSet<Item>) -> HashMap<Item, Vec<Item>> 
+    {
+
+        let mut ret: HashMap<Item, Vec<Item>> = HashMap::new();
+
+        items.iter()
+        .filter_map(|i| i.get_parent_item().map(|parent| (parent, i)))
+        .for_each(|i| {
+            match &mut ret.get_mut(&i.0) {
+                Some(v) => {v.push(*i.1);},
+                None => { ret.insert(i.0, vec![*i.1]);},
+            };
+        });
+
+        ret
+    }
+
+
+    pub fn get_child_items_with_pred<F>(&self, parent_items: &HashSet<Item>,  mut pred: F) -> Result<HashMap<Item, Vec<Item>>, XwfError>
+        where
+            F: FnMut(&Item) -> bool
+    {
+        let mut ret: HashMap<Item, Vec<Item>> = HashMap::new();
+        
+        parent_items.iter().for_each(|f| {
+            ret.insert(*f, vec![]);
+        });
+
+        self.iter()?
+        .filter(|i| pred(i))
+        .filter_map(|i| i.get_parent_item().map(|r: Item| (r, i)))
+        .filter(|i| parent_items.contains(&i.0))
+        .for_each(|i| {
+            match &mut ret.get_mut(&i.0) {
+                Some(v) => {v.push(i.1);},
+                None => { ret.insert(i.0, vec![i.1]);},
+            };
+        });
+
+        Ok(ret)
+    }
+
+
+    pub fn get_recursive_child_items_with_pred<F>(&self, parent_items: &HashSet<Item>,  mut pred: F) -> Result<HashMap<Item, Vec<Item>>, XwfError>
+        where
+            F: FnMut(&Item) -> Result<bool, XwfError>
+    {
+
+        let mut ret: HashMap<Item, Vec<Item>> = HashMap::new();
+
+        parent_items.iter().for_each(|f| {
+            ret.insert(*f, vec![]);
+        });
+
+        self.iter()?
+        .flat_map(|item| item.get_hierarchy().iter().map(|ancestor| (*ancestor, item)).collect::<Vec<(Item, Item)>>())
+        .filter_map(|i| parent_items.get(&i.0).map(|r: &Item| -> (Item, Item) {(*r, i.1)}))
+        .filter( |i| pred(&i.1).unwrap_or(false))
+        .for_each(|f| {
+            match ret.get_mut(&f.0) {
+                Some(v) => {v.push(f.1);},
+                None => {ret.insert(f.0, vec![f.1]);}
+            };
+        });
+
+        Ok(ret)
+    }
+
+
+    pub fn get_items_with_pred<F>(&self, mut pred: F) -> Result<Vec<u32>, XwfError>
         where
             F: FnMut(Item) -> Result<bool, XwfError>
     {
 
-        let mut ret: HashMap<u32, Vec<u32>> = HashMap::new();
-
-        for i in items {
-            ret.insert(*i, Vec::new());
-        }
+        let mut ret: Vec<u32> = Vec::new();
 
         self.select()?;
 
         for i in 0..self.get_item_count() {
             let item = Item::new(i as i32);
-            match item.get_parent_item() {
-                Some(parent_item) => {
 
-                    if items.contains(&(parent_item.item_id as u32)) && pred(item)? {
-                        ret.get_mut(&(parent_item.item_id as u32)).unwrap().push(i);
-                    }
-                },
-                None => {},
+            if pred(item)? == true {
+                ret.push(i);
             }
-
         }
         Ok(ret)
     }

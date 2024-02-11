@@ -46,6 +46,7 @@ pub struct RawApi {
     pub should_stop: FnXwfShouldStop,
     pub get_user_input: FnXwfGetUserInput,
     pub get_report_table_assocs: FnXwfGetReportTableAssocs,
+    pub get_hashset_assocs: FnXwfGetHashSetAssocs,
 }
 
 impl RawApi {
@@ -109,6 +110,7 @@ impl RawApi {
                should_stop: RawApi::load_method(h_module, cstr!(XWF_ShouldStop))?,
                get_user_input: RawApi::load_method(h_module, cstr!(XWF_GetUserInput))?,
                get_report_table_assocs: RawApi::load_method(h_module, cstr!(XWF_GetReportTableAssocs))?,
+               get_hashset_assocs: RawApi::load_method(h_module, cstr!(XWF_GetHashSetAssocs))?,
 
 
             })

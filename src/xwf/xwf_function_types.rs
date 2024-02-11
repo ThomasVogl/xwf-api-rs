@@ -114,6 +114,14 @@ pub type FnXwfGetReportTableAssocs = extern "stdcall" fn(
     nBufferLen: LONG
 ) -> DWORD;
 
+#[allow(non_snake_case, unused_variables)]
+pub type FnXwfGetHashSetAssocs = extern "stdcall" fn(
+    nItemID: LONG,
+    lpBuffer: LPWSTR,
+    nBufferLen: LONG,
+) -> LONG;
+
+
 
 #[allow(non_snake_case, unused_variables)]
 pub type FnXwfGetEvObjReportTableAssocs = extern "stdcall" fn(
@@ -227,3 +235,5 @@ pub type FnXwfGetUserInput = extern "stdcall" fn(
     nBufferLen: DWORD,
     nFlags: DWORD
 ) -> __int64;
+
+

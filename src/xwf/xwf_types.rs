@@ -300,15 +300,19 @@ pub enum PropType {
     NumberOfDataWindow      = 16,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ItemInfoClassification {
     NormalFile                            = 0x00, //normal file
     HfsResourceFork                       = 0x04, //HFS resource fork
     NtfsAlternateDataStream               = 0x08, //NTFS alternate data stream
     NtfsNonDirectoryIndex                 = 0x0A, //NTFS non-directory index
     NtfsBitmapAttribute                   = 0x0B, //NTFS bitmap attribute
+    NotDocumented1                        = 0x0E, //not documented but occuring
     NtfsGeneralLoggedUtilityStream        = 0x10, //NTFS general logged utility stream
     NtfsEfsLoggedUtilityStream            = 0x11, //NTFS EFS logged utility stream
+    NotDocumented2                        = 0xF2, //not documented but occuring
+    NotDocumented3                        = 0xF3, //not documented but occuring
+    NotDocumented4                        = 0xF4, //not documented but occuring
     EmailRelated                          = 0xF5, //e-mail related
     Excerpt                               = 0xF6, //excerpt
     ManuallyAttached                      = 0xF7, //manually attached
@@ -322,16 +326,22 @@ impl TryFrom<i64> for ItemInfoClassification {
     type Error = XwfError;
 
     fn try_from(value: i64) -> Result<Self, Self::Error> {
-        let value = value & 0xFF;
+        let value = value & 0xFFi64;
         match value {
             x if x == Self::NormalFile as i64                       => Ok(Self::NormalFile),
             x if x == Self::HfsResourceFork as i64                  => Ok(Self::HfsResourceFork),
             x if x == Self::NtfsAlternateDataStream as i64          => Ok(Self::NtfsAlternateDataStream),
+            x if x == Self::NtfsNonDirectoryIndex as i64            => Ok(Self::NtfsNonDirectoryIndex),
             x if x == Self::NtfsBitmapAttribute as i64              => Ok(Self::NtfsBitmapAttribute),
+            x if x == Self::NotDocumented1 as i64                   => Ok(Self::NotDocumented1),
             x if x == Self::NtfsGeneralLoggedUtilityStream as i64   => Ok(Self::NtfsGeneralLoggedUtilityStream),
             x if x == Self::NtfsEfsLoggedUtilityStream as i64       => Ok(Self::NtfsEfsLoggedUtilityStream),
+            x if x == Self::NotDocumented2 as i64                   => Ok(Self::NotDocumented2),
+            x if x == Self::NotDocumented3 as i64                   => Ok(Self::NotDocumented3),
+            x if x == Self::NotDocumented4 as i64                   => Ok(Self::NotDocumented4),
             x if x == Self::EmailRelated as i64                     => Ok(Self::EmailRelated),
             x if x == Self::Excerpt as i64                          => Ok(Self::Excerpt),
+            x if x == Self::ManuallyAttached as i64                 => Ok(Self::ManuallyAttached),
             x if x == Self::VideoStill as i64                       => Ok(Self::VideoStill),
             x if x == Self::EmailAttachment as i64                  => Ok(Self::EmailAttachment),
             x if x == Self::EmailMessage as i64                     => Ok(Self::EmailMessage),
@@ -483,7 +493,7 @@ impl TryFrom<i32> for FileFormatConsistency {
             return Err(XwfError::InvalidEnumValue(("FileFormatConsistency", value as i64)));
         }
 
-        let val = (value & 0xFF00) >> 8;
+        let val = (value & 0x0000FF00) >> 8;
         match val {
             x if x == FileFormatConsistency::Ok as i32 => Ok(FileFormatConsistency::Ok),
             x if x == FileFormatConsistency::Irregular as i32 => Ok(FileFormatConsistency::Irregular),
@@ -494,6 +504,42 @@ impl TryFrom<i32> for FileFormatConsistency {
     }
 }
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ItemInfoDeletion {
+    Existing                    = 0,   //existing
+    PossiblyReverable           = 1,   //previously existing, possibly recoverable
+    FirstClusterUnknown         = 2,   //previously existing, first cluster overwritten or unknown
+    MovedPossibleRecoverable    = 3,   //renamed/moved, possibly recoverable
+    MovedFirstClusterUnknown    = 4,   //renamed/moved, first cluster overwritten or unknown
+    CarvedFile                  = 5    //carved file (since v19.3 SR-3, used to be 1)
+}
+
+impl ItemInfoDeletion {
+    pub fn is_existing(&self) -> bool {
+        match &self {
+            ItemInfoDeletion::Existing => true,
+            _ => false
+        }
+    }
+}
+
+impl TryFrom<i64> for ItemInfoDeletion {
+    type Error = XwfError;
+
+    fn try_from(value: i64) -> Result<Self, Self::Error> {
+        match value {
+            x if x == ItemInfoDeletion::Existing as i64 => Ok(ItemInfoDeletion::Existing),
+            x if x == ItemInfoDeletion::PossiblyReverable as i64 => Ok(ItemInfoDeletion::PossiblyReverable),
+            x if x == ItemInfoDeletion::FirstClusterUnknown as i64 => Ok(ItemInfoDeletion::FirstClusterUnknown),
+            x if x == ItemInfoDeletion::MovedPossibleRecoverable as i64 => Ok(ItemInfoDeletion::MovedPossibleRecoverable),
+            x if x == ItemInfoDeletion::MovedFirstClusterUnknown as i64 => Ok(ItemInfoDeletion::MovedFirstClusterUnknown),
+            x if x == ItemInfoDeletion::CarvedFile as i64 => Ok(ItemInfoDeletion::CarvedFile),
+            _ => Err(XwfError::InvalidEnumValue(("ItemInfoDeletion",value)))
+        }
+    }
+}
+
+
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum FileTypeStatus {
     NotVerified = 0,
     TooSmall = 1,
@@ -503,6 +549,8 @@ pub enum FileTypeStatus {
     NewlyIdentified=5,
     MismatchDetected=6,
 }
+
+
 
 
 impl TryFrom<i32> for FileTypeStatus {
@@ -610,11 +658,41 @@ impl From<String> for FileTypeCategory {
     }
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum XwfDateTime {
     Utc(DateTime<Utc>),            //timestamp is given in UTC
     Local(DateTime<Local>),        //timestamp is given in local time zone
     NoTimezone(NaiveDateTime),     //timestamp has no timezone info
 }
+
+impl XwfDateTime {
+    pub fn to_naive(&self) -> NaiveDateTime {
+        match &self {
+            XwfDateTime::Utc(v) => v.naive_local(),
+            XwfDateTime::Local(v) => v.naive_local(),
+            XwfDateTime::NoTimezone(v) => *v,
+        }
+    }
+}
+
+impl Ord for XwfDateTime {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.to_naive().cmp(&other.to_naive())
+    }
+}
+
+impl PartialOrd for XwfDateTime {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for XwfDateTime {
+    fn eq(&self, other: &Self) -> bool {
+        self.to_naive().eq(&other.to_naive())
+    }
+}
+
+impl Eq for XwfDateTime {}
 
 

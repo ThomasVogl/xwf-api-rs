@@ -12,6 +12,8 @@ use bitflags::Flags;
 use chrono::{DateTime, Local, NaiveDateTime, TimeZone, Utc};
 use log::debug;
 
+use std::hash::{Hash, Hasher};
+
 use winapi::shared::minwindef::{BOOL, DWORD, LPVOID};
 use winapi::shared::ntdef::{HANDLE, LPWSTR};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -24,13 +26,54 @@ use crate::xwf::api::evidence::Evidence;
 use crate::xwf::api::traits::NativeHandle;
 use crate::xwf::raw_api::{RAW_API};
 use crate::xwf::api::volume::{HashType, Volume};
-use crate::xwf::xwf_types::{AddReportTableFlags, FileFormatConsistency, ItemInfoFlags, ItemTypeFlags, OpenItemFlags, PropType, FileTypeStatus, FileTypeCategory, ItemInfoClassification, XwfItemInfoTypes, XwfDateTime};
+use crate::xwf::xwf_types::{AddReportTableFlags, FileFormatConsistency, FileTypeCategory, FileTypeStatus, ItemInfoClassification, ItemInfoDeletion, ItemInfoFlags, ItemTypeFlags, OpenItemFlags, PropType, XwfDateTime, XwfItemInfoTypes};
 
 const CHUNK_SIZE: i64 = 10485760;
+
+pub struct ItemIterator {
+    cur_item: Option<Item>,
+
+}
+
+impl ItemIterator {
+    fn create(item: &Item) -> Self{
+        ItemIterator {
+            cur_item: Some(*item),
+        }
+    }
+}
+
+impl Iterator for ItemIterator {
+    type Item = Item;
+
+    fn next(&mut self) -> Option<Self::Item> {
+
+        match self.cur_item {
+            Some(i) => {
+                self.cur_item = i.get_parent_item();
+                Some(i)
+            },
+            None => None,
+        }
+    }
+}
 
 #[derive(Copy, Clone, Debug)]
 pub struct Item {
     pub item_id: i32,
+}
+
+impl PartialEq for Item {
+    fn eq(&self, other: &Self) -> bool {
+        self.item_id == other.item_id
+    }
+}
+impl Eq for Item {}
+
+impl Hash for Item {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.item_id.hash(state)
+    }
 }
 
 
@@ -62,6 +105,10 @@ impl Display for UniqueItemId {
 }
 
 impl Item {
+
+    pub fn iter(&self) -> ItemIterator {
+        ItemIterator::create(self)
+    }
     pub fn new(item_id: i32) -> Item {
         Item {
             item_id,
@@ -173,6 +220,11 @@ impl Item {
         }
     }
 
+    pub fn get_item_info_deletion(&self) -> Result<ItemInfoDeletion, XwfError> {
+        let result = self.get_item_info(XwfItemInfoTypes::Deletion)?;
+        ItemInfoDeletion::try_from(result)
+    }
+
     pub fn get_item_info_flags(&self) -> Result<ItemInfoFlags, XwfError> {
         let result = self.get_item_info(XwfItemInfoTypes::Flags)?;
         Ok(ItemInfoFlags::from_bits_truncate(result as u64))
@@ -253,16 +305,9 @@ impl Item {
 
     pub fn get_path(&self) -> String {
 
-        let mut p = *self;
-
-        let mut path_components: Vec<String> = Vec::new();
-
-        while let Some(item) = p.get_parent_item().iter().next() {
-            path_components.insert(0, item.get_name());
-            p = *item
-        }
-
-        path_components.remove(0);
+        let mut path_components: Vec<String> = self.iter().map(|p| p.get_name()).collect();
+        path_components.pop();
+        path_components.reverse();
 
         "\\".to_string() + &path_components.join("\\")
     }
@@ -272,6 +317,16 @@ impl Item {
         (get_raw_api!().add_to_report_table)(self.item_id, wchar_c_str, flags.bits());
     }
 
+    pub fn get_parent_dir(&self) -> Option<Item> {
+        self.iter().find(|i|{
+            match i.get_item_info_flags() {
+                Ok(flags) => flags.contains(ItemInfoFlags::IsDirectory),
+                Err(_) => false,
+            }
+        })
+    }
+
+
     pub fn get_parent_item(&self) -> Option<Item> {
         let parent_id = (get_raw_api!().get_item_parent)(self.item_id);
 
@@ -279,6 +334,13 @@ impl Item {
             None
         } else {
             Some(Item::new(parent_id))
+        }
+    }
+
+    pub fn get_hierarchy(&self) -> Vec<Item> {
+        match self.get_parent_item() {
+            Some(parent) => parent.iter().collect(),
+            None => vec![],
         }
     }
 
@@ -292,7 +354,7 @@ impl Item {
         }
 
         let buf_and_flags = (buf.len() as u32 ) | flags.bits();
-        let status = (get_raw_api!().get_item_type)(self.item_id, buf.as_mut_ptr(), buf_and_flags);
+        let _ = (get_raw_api!().get_item_type)(self.item_id, buf.as_mut_ptr(), buf_and_flags);
 
         Ok(wchar_str_to_string(buf.as_slice()))
     }
@@ -300,8 +362,36 @@ impl Item {
         let mut buf = [0u16; 4096];
         let num_assocs = (get_raw_api!().get_report_table_assocs)(self.item_id, buf.as_mut_ptr(), buf.len() as i32);
 
+        if num_assocs == 0 {
+            return Ok(Vec::new());
+        }
+
         let assocs = wchar_str_to_string_expect_term(&buf).ok_or(XwfError::GivenBufferToSmallForContent)?;
         let vec_assocs: Vec<String> = assocs.split(", ").map(|s| String::from_str(s).unwrap()).collect();
+
+        if vec_assocs.len() != num_assocs as usize {
+            Err(XwfError::GivenBufferToSmallForContent)
+        } else {
+            Ok(vec_assocs)
+        }
+
+    }
+
+    pub fn get_hash_sets(&self) -> Result<Vec<String>, XwfError> {
+        let mut buf = [0u16; 4096];
+        let num_assocs = (get_raw_api!().get_hashset_assocs)(self.item_id, buf.as_mut_ptr(), buf.len() as i32);
+
+        if num_assocs < 0 {
+            return Err(XwfError::XwfFunctionCallFailed("get_hashset_assocs"));
+        }
+
+        if num_assocs == 0 {
+            return Ok(Vec::new());
+        }
+
+        let assocs = wchar_str_to_string_expect_term(&buf).ok_or(XwfError::GivenBufferToSmallForContent)?;
+        let vec_assocs: Vec<String> = assocs.split(", ").map(|s| String::from_str(s).unwrap()).collect();
+
 
         if vec_assocs.len() != num_assocs as usize {
             Err(XwfError::GivenBufferToSmallForContent)
