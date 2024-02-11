@@ -28,7 +28,7 @@ use crate::xwf::raw_api::{RAW_API};
 use crate::xwf::api::volume::{HashType, Volume};
 use crate::xwf::xwf_types::{AddReportTableFlags, FileFormatConsistency, FileTypeCategory, FileTypeStatus, ItemInfoClassification, ItemInfoDeletion, ItemInfoFlags, ItemTypeFlags, OpenItemFlags, PropType, XwfDateTime, XwfItemInfoTypes};
 
-const CHUNK_SIZE: i64 = 10485760;
+const CHUNK_SIZE: i64 = 65536;
 
 pub struct ItemIterator {
     cur_item: Option<Item>,
