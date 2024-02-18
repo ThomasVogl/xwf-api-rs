@@ -1,6 +1,6 @@
 use std::io::Write;
 use std::ptr::null_mut;
-use bitflags::Flags;
+
 use crate::get_raw_api;
 use crate::xwf::api::util::{buf_to_wchar_cstr, string_to_wchar_cstr};
 use crate::xwf::xwf_types::{OutputMessageFlags, ProgressFlags};
@@ -64,7 +64,7 @@ impl Application {
     }
 
     pub fn set_progress_percentage(num: u32, total: u32) {
-        let mut percentage:u32;
+        let percentage:u32;
         if total > 0 {
             percentage = (100.0f32 * num as f32 / total as f32).round() as u32;
         } else {

@@ -1,5 +1,3 @@
-use std::sync::Mutex;
-use crate::xwf::raw_api::{RAW_API, RawApi};
 #[macro_export]
 macro_rules! export_xt_init {
 
@@ -7,8 +5,14 @@ macro_rules! export_xt_init {
         #[no_mangle]
         #[allow(non_snake_case, unused_variables)]
         pub extern "C"  fn XT_Init(nVersion: DWORD, nFlags: DWORD, hMainWnd: HANDLE, lpReserved: PVOID) -> LONG {
+
+                    
             unsafe {
-                $variable.get_or_init(|| <$variable_type>::create());
+                RAW_API = xwf::raw_api::RawApi::load().ok();
+            }
+            
+            unsafe {
+                $variable = Some(<$variable_type>::create());
             }
 
             let logger = WriteLogger::init(LevelFilter::Debug, Config::default(), Application::new());
@@ -36,7 +40,7 @@ macro_rules! export_xt_init {
 macro_rules! get_lib_instance {
     ($variable:ident, $variable_type:ty) => {
         unsafe {
-            $variable.get_mut().unwrap()
+            $variable.as_mut().unwrap()
         }
 
     }
@@ -50,6 +54,16 @@ macro_rules! export_xt_done {
             -> LONG {
             debug!("XT_Done called");
             get_lib_instance!($variable, $variable_type).xt_done();
+
+            //uninitalize raw api
+            unsafe {
+                RAW_API = None;
+                $variable = None;
+            }
+            
+
+            
+
             0
         }
     };
@@ -179,7 +193,7 @@ macro_rules! export_xt_process_item_ex {
 #[macro_export]
 macro_rules! create_static_var {
     ($variable_name:ident, $variable_type:ty) => {
-        static mut $variable_name: OnceLock<$variable_type> = OnceLock::new();
+        static mut $variable_name: Option<$variable_type> = None;
     }
 }
 
@@ -215,15 +229,11 @@ macro_rules! export_all_functions_ex {
 #[macro_export]
 macro_rules! needed_use_declarations {
     () => {
-        use bitflags::Flags;
         use winapi::shared::minwindef::*;
         use winapi::shared::ntdef::*;
         use simplelog::{WriteLogger, LevelFilter, Config};
-        use std::sync::Mutex;
-        use std::sync::OnceLock;
 
         use log::{debug, error, info, warn};
-        use $crate::xwf::*;
         use $crate::xwf::raw_api::*;
         use $crate::xwf::api::evidence::*;
         use $crate::xwf::api::item::*;

@@ -1,4 +1,3 @@
-use log::info;
 use winapi::shared::ntdef::HANDLE;
 use crate::xwf::api::evidence::Evidence;
 use crate::xwf::api::item::{Item, ItemHandle};
@@ -22,25 +21,25 @@ pub trait XTension {
     fn xtension_name(&self) -> String;
 
     //TODO implement LicenseInfo argument, currently it is empty
-    fn xt_init(&mut self, version: XtVersion, flags: XtInitFlags, main_window: Option<Window>, license_info: XtLicenseInfo) -> Result<XtInitReturn, Self::XTensionError> {
+    fn xt_init(&mut self, _: XtVersion, _: XtInitFlags, _: Option<Window>, _: XtLicenseInfo) -> Result<XtInitReturn, Self::XTensionError> {
         Ok(XtInitReturn::RunSingleThreaded)
     }
     fn xt_done(&mut self) {
     }
-    fn xt_about(&mut self, parent_window: Option<Window>) {
+    fn xt_about(&mut self, _: Option<Window>) {
 
     }
-    fn xt_prepare(&mut self, volume: Option<Volume>, evidence: Option<Evidence>, op_type: XtPrepareOpType) -> Result<XtPrepareReturn, Self::XTensionError> {
+    fn xt_prepare(&mut self, _: Option<Volume>, _: Option<Evidence>, _: XtPrepareOpType) -> Result<XtPrepareReturn, Self::XTensionError> {
         Ok(XtPrepareReturn::Positive(XtPreparePositiveReturnFlags::CallProcessItemLate))
     }
-    fn xt_process_item(&mut self, item: Item) -> Result<XtProcessItemReturn, Self::XTensionError> {
+    fn xt_process_item(&mut self, _: Item) -> Result<XtProcessItemReturn, Self::XTensionError> {
         Ok(XtProcessItemReturn::Ok)
     }
-    fn xt_process_item_ex(&mut self, item_handle: ItemHandle) -> Result<XtProcessItemExReturn, Self::XTensionError> {
+    fn xt_process_item_ex(&mut self, _: ItemHandle) -> Result<XtProcessItemExReturn, Self::XTensionError> {
         Ok(XtProcessItemExReturn::Ok)
     }
 
-    fn xt_finalize(&mut self, volume: Option<Volume>, evidence: Option<Evidence>, op_type: XtPrepareOpType) -> Result<XtFinalizeReturn, Self::XTensionError> {
+    fn xt_finalize(&mut self, _: Option<Volume>, _: Option<Evidence>, _: XtPrepareOpType) -> Result<XtFinalizeReturn, Self::XTensionError> {
         Ok(XtFinalizeReturn::Ok)
     }
 

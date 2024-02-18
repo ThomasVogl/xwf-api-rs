@@ -1,10 +1,9 @@
 use std::ffi::CStr;
 use std::mem::transmute_copy;
 use std::ptr::null_mut;
-use std::sync::Mutex;
 use cstr::cstr;
 use winapi::shared::minwindef::{FARPROC, HMODULE};
-use winapi::um::libloaderapi::{GetProcAddress, GetModuleHandleA};
+use winapi::um::libloaderapi::{GetModuleHandleW, GetProcAddress};
 
 use crate::xwf::xwf_function_types::*;
 
@@ -47,6 +46,9 @@ pub struct RawApi {
     pub get_user_input: FnXwfGetUserInput,
     pub get_report_table_assocs: FnXwfGetReportTableAssocs,
     pub get_hashset_assocs: FnXwfGetHashSetAssocs,
+    pub get_extracted_metadata: FnXwfGetExtractedMetadata,
+    pub get_metadata_ex: FnXwfGetMetadataEx,
+    pub release_mem: FnXwfReleaseMem,
 }
 
 impl RawApi {
@@ -67,7 +69,7 @@ impl RawApi {
     }
     pub fn load() -> Result<RawApi, &'static str> {
         unsafe {
-            let h_module = GetModuleHandleA(std::ptr::null());
+            let h_module = GetModuleHandleW(std::ptr::null());
             if h_module == null_mut() {
                 return Err("could not load module")
             }
@@ -111,21 +113,25 @@ impl RawApi {
                get_user_input: RawApi::load_method(h_module, cstr!(XWF_GetUserInput))?,
                get_report_table_assocs: RawApi::load_method(h_module, cstr!(XWF_GetReportTableAssocs))?,
                get_hashset_assocs: RawApi::load_method(h_module, cstr!(XWF_GetHashSetAssocs))?,
-
-
+               get_extracted_metadata: RawApi::load_method(h_module, cstr!(XWF_GetExtractedMetadata))?,
+               get_metadata_ex: RawApi::load_method(h_module, cstr!(XWF_GetMetadataEx))?,
+               release_mem: RawApi::load_method(h_module, cstr!(XWF_ReleaseMem))?,
             })
         }
     }
 }
 
 
-pub static RAW_API: std::sync::OnceLock<RawApi> = std::sync::OnceLock::new();
+pub static mut RAW_API: Option<RawApi> = None;
 
 
 #[macro_export]
 macro_rules! get_raw_api {
     () => {
-        RAW_API.get_or_init(|| $crate::xwf::raw_api::RawApi::load_no_error())
+        unsafe {
+            RAW_API.as_ref().unwrap()
+        }
+        
     }
 }
 

@@ -1,32 +1,27 @@
-use std::collections::{HashMap, LinkedList};
 use std::fmt::{Display, Formatter};
 use std::fs::File;
-use std::io;
 use std::io::Write;
-use std::iter::Map;
-use std::ops::{BitAnd, BitOr};
+use std::ops::BitOr;
 use std::path::Path;
 use std::ptr::null_mut;
 use std::str::FromStr;
-use bitflags::Flags;
-use chrono::{DateTime, Local, NaiveDateTime, TimeZone, Utc};
-use log::debug;
+use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
 
 use std::hash::{Hash, Hasher};
 
-use winapi::shared::minwindef::{BOOL, DWORD, LPVOID};
+use winapi::shared::minwindef::{BOOL, DWORD, LPVOID, PDWORD};
 use winapi::shared::ntdef::{HANDLE, LPWSTR};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use winapi::ctypes::__int64;
-use crate::{get_raw_api, xwf};
-use crate::xwf::api::application::Application;
+use serde::{Deserialize, Serialize};
+use crate::get_raw_api;
 use crate::xwf::api::util::{string_to_wchar_cstr, wchar_ptr_to_string, wchar_str_to_string, wchar_str_to_string_expect_term};
 use crate::xwf::api::error::XwfError;
 use crate::xwf::api::evidence::Evidence;
 use crate::xwf::api::traits::NativeHandle;
-use crate::xwf::raw_api::{RAW_API};
+use crate::xwf::raw_api::RAW_API;
 use crate::xwf::api::volume::{HashType, Volume};
 use crate::xwf::xwf_types::{AddReportTableFlags, FileFormatConsistency, FileTypeCategory, FileTypeStatus, ItemInfoClassification, ItemInfoDeletion, ItemInfoFlags, ItemTypeFlags, OpenItemFlags, PropType, XwfDateTime, XwfItemInfoTypes};
+
+use super::util::char_ptr_to_string;
 
 const CHUNK_SIZE: i64 = 65536;
 
@@ -220,6 +215,8 @@ impl Item {
         }
     }
 
+    
+
     pub fn get_item_info_deletion(&self) -> Result<ItemInfoDeletion, XwfError> {
         let result = self.get_item_info(XwfItemInfoTypes::Deletion)?;
         ItemInfoDeletion::try_from(result)
@@ -282,7 +279,7 @@ impl Item {
                     }
                 }
             },
-            Err(e) => {
+            Err(_) => {
                 return None;
             }
 
@@ -401,6 +398,21 @@ impl Item {
 
     }
 
+    pub fn get_extracted_metadata(&self) -> Option<Vec<String>>{
+        let ptr = (get_raw_api!().get_extracted_metadata)(self.item_id);
+        
+        if ptr == null_mut() {
+            None
+        } else {
+            Some(wchar_ptr_to_string(ptr).replace("\r", "")
+            .split("\n").filter(|v| !v.is_empty())
+            .map(|v| v.to_string())
+            .collect())
+        }
+
+        
+    }
+
     pub fn get_item_category(&self) -> Result<(FileTypeStatus, FileFormatConsistency, FileTypeCategory), XwfError> {
         let mut buf = [0u16; 256];
 
@@ -460,6 +472,41 @@ impl ItemHandle {
         self.item_handle
     }
 
+    
+
+
+    pub fn get_metadata(&self, full_output: bool) -> Option<Vec<String>> {
+        let mut flags: DWORD = 1;
+        let flags_ptr: PDWORD = &mut flags;
+
+        if full_output {
+            flags = 0;
+        }
+        let ptr = ((get_raw_api!().get_metadata_ex))(self.item_handle, flags_ptr);
+
+        if ptr == null_mut() {
+            None
+        } 
+        else {
+            if ( flags & 0xFF000000) != 0 {
+                (get_raw_api!().release_mem)(ptr);
+                return None;
+            } else {
+
+                let metadata_str;
+                if flags == 0x1 {
+                    metadata_str = char_ptr_to_string(ptr as *mut u8);
+                } else {
+                    metadata_str = wchar_ptr_to_string(ptr as LPWSTR);
+                }
+                
+                (get_raw_api!().release_mem)(ptr);
+
+                return Some(metadata_str.split('\n').map(|s| s.to_string()).collect());
+            }
+        }
+    }
+
     pub fn get_prop(&self, prop_type: PropType) -> i64 {
         (get_raw_api!().get_prop)(self.item_handle, prop_type as DWORD, null_mut())
     }
@@ -474,7 +521,7 @@ impl ItemHandle {
 
     pub fn get_logical_size(&self) -> Result<i64, XwfError> {
         let size = self.get_prop(PropType::LogicalSize);
-        let size =  if size > 0 {
+        if size > 0 {
                 return Ok(size);
         } else {
             return Err(XwfError::InvalidItemSize);
@@ -504,14 +551,14 @@ impl ItemHandle {
         while num_bytes_to_read  > 0 {
 
             let bytes_read = size-num_bytes_to_read;
-            let mut buf_ptr: *mut u8 = null_mut();
+            
 
             let mut chunk_size = CHUNK_SIZE;
 
             if chunk_size > num_bytes_to_read {
                 chunk_size = num_bytes_to_read;
             }
-
+            let buf_ptr;
             unsafe {
                 buf_ptr = ret.as_mut_ptr().add((size-num_bytes_to_read) as usize);
             }
@@ -523,8 +570,6 @@ impl ItemHandle {
             }
 
             num_bytes_to_read-=r as i64;
-
-
         }
 
         Ok(ret)
@@ -560,7 +605,7 @@ impl ItemHandle {
                 return Err(XwfError::ReadItemDataFailed);
             }
 
-            if ( r != CHUNK_SIZE as u32) {
+            if r != CHUNK_SIZE as u32 {
                 buf.resize(r as usize, 0);
             }
 

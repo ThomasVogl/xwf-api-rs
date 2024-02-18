@@ -1,5 +1,4 @@
-use std::ops::Deref;
-use bitflags::{bitflags, Flags};
+use bitflags::bitflags;
 use chrono::{DateTime, Local, NaiveDateTime, Utc};
 use serde::{Deserialize, Serialize};
 

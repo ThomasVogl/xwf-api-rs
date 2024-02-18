@@ -1,6 +1,5 @@
-use std::collections::vec_deque::Iter;
 use std::collections::{HashMap, HashSet};
-use std::ptr::{null_mut};
+use std::ptr::null_mut;
 use winapi::shared::minwindef::{DWORD, LPVOID};
 use winapi::shared::ntdef::{HANDLE, LONG, LPWSTR, PVOID};
 use crate::get_raw_api;
@@ -11,7 +10,7 @@ use crate::xwf::api::item::Item;
 use crate::xwf::xwf_types::PropType;
 use crate::xwf::raw_api::RAW_API;
 
-
+#[allow(dead_code)]
 enum VsPropType {
     SpecialItemId = 10,
     HashType1 =     20,

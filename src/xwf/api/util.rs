@@ -47,3 +47,21 @@ pub fn wchar_ptr_to_string(mut ptr: LPWSTR) -> String {
     }
     wchar_str_to_string(&vec_u16)
 }
+
+
+pub fn char_ptr_to_string(mut ptr: *mut u8) -> String {
+
+    let mut vec_u8: Vec<u8> = Vec::new();
+
+    unsafe {
+        let mut chr = *ptr;
+
+        while chr != 0 {
+            vec_u8.push(chr);
+            ptr = ptr.add(1);
+            chr = *ptr;
+        }
+    }
+
+    String::from_utf8(vec_u8).unwrap_or_default()
+}

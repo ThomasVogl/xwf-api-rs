@@ -1,4 +1,4 @@
-use winapi::shared::minwindef::{BOOL, BYTE, DWORD, LPBOOL, LPLONG, LPVOID};
+use winapi::shared::minwindef::{BOOL, BYTE, DWORD, LPBOOL, LPLONG, LPVOID, PDWORD};
 use winapi::shared::ntdef::{LONGLONG, LONG, HANDLE, WCHAR, LPWCH, PVOID, PLONG, LPWSTR};
 use winapi::ctypes::{__int64};
 
@@ -235,5 +235,27 @@ pub type FnXwfGetUserInput = extern "stdcall" fn(
     nBufferLen: DWORD,
     nFlags: DWORD
 ) -> __int64;
+
+
+
+#[allow(non_snake_case, unused_variables)]
+pub type FnXwfGetExtractedMetadata = extern "stdcall" fn(
+    nItemID: LONG,
+) -> LPWSTR;
+
+
+#[allow(non_snake_case, unused_variables)]
+pub type FnXwfGetMetadataEx = extern "stdcall" fn(
+    hItem: HANDLE,
+    lpnFlags: PDWORD
+) -> LPVOID;
+
+
+
+#[allow(non_snake_case, unused_variables)]
+pub type FnXwfReleaseMem = extern "stdcall" fn(
+    lpBuffer: PVOID,
+) -> BOOL;
+
 
 
