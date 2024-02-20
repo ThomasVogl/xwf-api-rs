@@ -1,3 +1,4 @@
+use std::collections::{HashMap, HashSet};
 use std::ptr::null_mut;
 use winapi::shared::minwindef::LPVOID;
 use winapi::shared::ntdef::{LONG, LPWSTR, PLONG};
@@ -12,7 +13,7 @@ use crate::xwf::raw_api::RAW_API;
 
 
 
-
+#[derive(Clone)]
 pub struct ReportTable {
     pub name: String,
     pub id: u16,
@@ -39,6 +40,9 @@ impl ReportTable {
     }
 }
 pub struct Case {
+    report_tables: HashMap<u16, ReportTable>,
+    report_tables_by_name: HashMap<String, ReportTable>,
+    report_table_map: HashMap<u32, HashMap<u16, HashSet<u32>>>
 
 }
 
@@ -55,6 +59,46 @@ pub struct CaseInfo {
 
 
 impl Case {
+    pub fn xxx(&mut self) -> Result<(), XwfError> {
+
+        let ev = Evidence::get_first_evidence().ok_or(XwfError::NoEvidenceAvaible)?;
+        
+        for i in &Case::get_report_tables() {
+            self.report_tables.insert(i.id, i.clone());
+            self.report_tables_by_name.insert(i.name.clone(), i.clone());
+        }
+
+        
+        ev.iter().for_each(|e| {
+            e.get_report_table_assocs(false).and_then(|assocs| {
+                for (table_id,v) in assocs {
+                    let evidence_id = e.get_id();
+                    let table_map: &mut HashMap<u16, HashSet<u32>> = match self.report_table_map.get_mut(&evidence_id) {
+                        None => {
+                            self.report_table_map.insert(evidence_id, HashMap::new());
+                            self.report_table_map.get_mut(&evidence_id).unwrap()
+                        },
+                        Some(v) => {v}
+                    };
+
+                    let id_set = match table_map.get_mut(&table_id) {
+                        None => {
+                            table_map.insert(table_id, HashSet::new());
+                            table_map.get_mut(&table_id).unwrap()
+                        },
+                        Some(v) => {v}
+                    };
+
+                    for item_id in v {
+                        id_set.insert(item_id);
+                    }
+                }
+                Some(())
+            });
+        });
+
+        Ok(())
+    }
 
     pub fn get_case_infos() -> Result<CaseInfo, XwfError> {
         let mut buf = [0u16; 256];

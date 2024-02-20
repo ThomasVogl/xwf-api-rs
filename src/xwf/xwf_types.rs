@@ -102,7 +102,7 @@ bitflags! {
         // The source may set any bits
         const _ = !0;
     }
-
+    #[derive(Clone)]
     pub struct ReportTableFlags: u32 {
         const HintByApplication             = 0x0001; //hint for user by application
         const CreatedByUser                 = 0x0002; //created manually by the user

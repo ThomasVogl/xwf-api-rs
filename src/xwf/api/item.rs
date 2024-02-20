@@ -78,6 +78,36 @@ pub struct UniqueItemId {
     pub evidence_id: u32,
 }
 
+impl PartialOrd for UniqueItemId {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+        
+    }
+}
+
+
+impl Ord for UniqueItemId {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.evidence_id.cmp(&other.evidence_id).then(self.item_id.cmp(&other.item_id))
+    }
+}
+
+impl UniqueItemId {
+    pub fn new(evidence_id: u32, item_id: u32) -> UniqueItemId {
+        UniqueItemId {
+            item_id: item_id as i32,
+            evidence_id: evidence_id,
+        }
+    }
+    pub fn item(&self) -> Item {
+        Item::new(self.item_id)
+    }
+
+    pub fn evidence(&self) -> Evidence {
+        Evidence::new((get_raw_api!().get_ev_obj)(self.evidence_id)).unwrap()
+    }
+}
+
 impl From<i64> for UniqueItemId {
     fn from(value: i64) -> Self {
         UniqueItemId { 
