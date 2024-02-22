@@ -385,7 +385,7 @@ impl Item {
 
         Ok(wchar_str_to_string(buf.as_slice()))
     }
-    pub fn get_report_tables(&self) -> Result<Vec<String>, XwfError> {
+    pub fn __get_report_tables(&self) -> Result<Vec<String>, XwfError> {
         let mut buf = [0u16; 4096];
         let num_assocs = (get_raw_api!().get_report_table_assocs)(self.item_id, buf.as_mut_ptr(), buf.len() as i32);
 

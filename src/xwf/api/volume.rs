@@ -7,7 +7,7 @@ use crate::xwf::api::util::{wchar_ptr_to_string, wchar_str_to_string};
 
 use crate::xwf::api::error::XwfError;
 use crate::xwf::api::item::Item;
-use crate::xwf::xwf_types::PropType;
+use crate::xwf::xwf_types::{ItemInfoFlags, PropType};
 use crate::xwf::raw_api::RAW_API;
 
 #[allow(dead_code)]
@@ -248,6 +248,10 @@ impl Volume {
             ret.insert(*f, vec![]);
         });
 
+        let parent_items: HashSet<&Item> = parent_items.iter().filter(|p| {
+            p.get_item_info_flags().unwrap_or_default().contains(ItemInfoFlags::HasChildObjects)
+        }).collect();
+
         self.iter()?
         .filter(|i| pred(i))
         .filter_map(|i| i.get_parent_item().map(|r: Item| (r, i)))
@@ -274,9 +278,13 @@ impl Volume {
             ret.insert(*f, vec![]);
         });
 
+        let parent_items: HashSet<&Item> = parent_items.iter().filter(|p| {
+            p.get_item_info_flags().unwrap_or_default().contains(ItemInfoFlags::HasChildObjects)
+        }).collect();
+
         self.iter()?
         .flat_map(|item| item.get_hierarchy().iter().map(|ancestor| (*ancestor, item)).collect::<Vec<(Item, Item)>>())
-        .filter_map(|i| parent_items.get(&i.0).map(|r: &Item| -> (Item, Item) {(*r, i.1)}))
+        .filter_map(|i| parent_items.get(&i.0).map(|r: &&Item| -> (Item, Item) {(**r, i.1)}))
         .filter( |i| pred(&i.1).unwrap_or(false))
         .for_each(|f| {
             match ret.get_mut(&f.0) {

@@ -1,4 +1,5 @@
 use std::collections::{HashMap, HashSet};
+use std::hash::Hash;
 use std::ptr::null_mut;
 use winapi::shared::minwindef::LPVOID;
 use winapi::shared::ntdef::{LONG, LPWSTR, PLONG};
@@ -6,6 +7,7 @@ use chrono::{DateTime, Utc};
 
 use crate::get_raw_api;
 use crate::xwf::api::evidence::Evidence;
+use crate::xwf::api::item::Item;
 use crate::xwf::api::util::{wchar_ptr_to_string, wchar_str_to_string};
 use crate::xwf::api::error::XwfError;
 use crate::xwf::xwf_types::ReportTableFlags;
@@ -18,6 +20,20 @@ pub struct ReportTable {
     pub name: String,
     pub id: u16,
     pub flags: ReportTableFlags,
+}
+
+impl PartialEq for ReportTable {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
+impl Eq for ReportTable {}
+
+impl Hash for ReportTable {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
 }
 
 impl ReportTable {
@@ -42,7 +58,7 @@ impl ReportTable {
 pub struct Case {
     report_tables: HashMap<u16, ReportTable>,
     report_tables_by_name: HashMap<String, ReportTable>,
-    report_table_map: HashMap<u32, HashMap<u16, HashSet<u32>>>
+    report_table_map: HashMap<u32, HashMap<ReportTable, HashSet<u32>>>
 
 }
 
@@ -59,7 +75,47 @@ pub struct CaseInfo {
 
 
 impl Case {
-    pub fn xxx(&mut self) -> Result<(), XwfError> {
+
+    pub fn new() -> Result<Case, XwfError> {
+        let mut c = Case {
+            report_tables: HashMap::new(),
+            report_tables_by_name: HashMap::new(),
+            report_table_map: HashMap::new(),
+        };
+
+        c.compute_report_table_cache()?;
+        Ok(c)
+    }
+
+    pub fn contained_in_report_table(&self, t: &Option<&ReportTable>, evidence: &Evidence, item: &Item) -> bool {
+        t.and_then(|t| {
+            self.report_table_map.get(&evidence.get_id()).and_then(|tables| {
+                tables.get(t).and_then(|itemset| {
+                    Some(itemset.contains(&(item.item_id as u32)))
+                })
+            })
+        }).unwrap_or(false)
+    }
+
+    pub fn get_cached_report_tables(&self, evidence: &Evidence, item: &Item) -> Vec<&ReportTable> {
+        
+        self.report_table_map.get(&evidence.get_id()).and_then(|report_tables| {
+            Some(report_tables.iter()
+            .filter(|i| i.1.contains(&(item.item_id as u32)))
+            .map(|i| i.0)
+            .collect())
+        }).unwrap_or(vec![])
+    }
+
+    pub fn get_report_table_by_name(&self, name: &str) -> Option<&ReportTable> {
+        self.report_tables_by_name.get(name)
+    }
+
+    pub fn get_report_table_by_id(&self, id: &u16) -> Option<&ReportTable> {
+        self.report_tables.get(id)
+    }
+
+    pub fn compute_report_table_cache(&mut self) -> Result<(), XwfError> {
 
         let ev = Evidence::get_first_evidence().ok_or(XwfError::NoEvidenceAvaible)?;
         
@@ -72,8 +128,9 @@ impl Case {
         ev.iter().for_each(|e| {
             e.get_report_table_assocs(false).and_then(|assocs| {
                 for (table_id,v) in assocs {
+                    let table = self.get_report_table_by_id(&table_id).unwrap().clone();
                     let evidence_id = e.get_id();
-                    let table_map: &mut HashMap<u16, HashSet<u32>> = match self.report_table_map.get_mut(&evidence_id) {
+                    let table_map = match self.report_table_map.get_mut(&evidence_id) {
                         None => {
                             self.report_table_map.insert(evidence_id, HashMap::new());
                             self.report_table_map.get_mut(&evidence_id).unwrap()
@@ -81,10 +138,10 @@ impl Case {
                         Some(v) => {v}
                     };
 
-                    let id_set = match table_map.get_mut(&table_id) {
+                    let id_set = match table_map.get_mut(&table) {
                         None => {
-                            table_map.insert(table_id, HashSet::new());
-                            table_map.get_mut(&table_id).unwrap()
+                            table_map.insert(table.clone(), HashSet::new());
+                            table_map.get_mut(&table).unwrap()
                         },
                         Some(v) => {v}
                     };
