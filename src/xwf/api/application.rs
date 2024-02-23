@@ -1,4 +1,3 @@
-use std::io::Write;
 use std::ptr::null_mut;
 
 use crate::get_raw_api;
@@ -9,13 +8,12 @@ use crate::xwf::raw_api::RAW_API;
 use super::util::wchar_ptr_to_string;
 
 pub struct Application {
-    output_buffer: Vec<u8>
+
 }
 impl Application {
 
     pub fn new() -> Application {
         Application {
-            output_buffer: Vec::new(),
         }
     }
 
@@ -25,6 +23,10 @@ impl Application {
 
     pub fn output_string(msg: String, flags: OutputMessageFlags) {
         (get_raw_api!().output_message)(string_to_wchar_cstr(&msg) ,flags.bits())
+    }
+
+    pub fn log(msg: String) {
+        (get_raw_api!().output_message)(string_to_wchar_cstr(&msg) , OutputMessageFlags::empty().bits());
     }
 
     pub fn get_user_input_integer(msg: String) -> Option<u64> {
@@ -73,24 +75,4 @@ impl Application {
         (get_raw_api!().set_progress_percentage)(percentage);
     }
 
-}
-
-impl Write for Application {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-
-        for i in buf {
-
-            if *i == '\n' as u8 {
-                Application::output(self.output_buffer.as_slice(), OutputMessageFlags::empty());
-                self.output_buffer.clear();
-            } else {
-                self.output_buffer.push(*i);
-            }
-        }
-        Ok(buf.len())
-    }
-
-    fn flush(&mut self) -> std::io::Result<()> {
-        self.output_buffer.flush()
-    }
 }

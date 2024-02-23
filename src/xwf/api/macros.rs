@@ -15,11 +15,9 @@ macro_rules! export_xt_init {
                 $variable = Some(<$variable_type>::create());
             }
 
-            let logger = WriteLogger::init(LevelFilter::Debug, Config::default(), Application::new());
-
             let xtension_version = get_lib_instance!($variable, $variable_type).xtension_version();
-            info!("X-Tension {}, Version {}.{}.{}", get_lib_instance!($variable, $variable_type).xtension_name(), xtension_version.0, xtension_version.1, xtension_version.2 );
-            debug!("XT_Init called");
+            Application::log(format!("X-Tension {}, Version {}.{}.{}", get_lib_instance!($variable, $variable_type).xtension_name(), xtension_version.0, xtension_version.1, xtension_version.2 ));
+            Application::log("XT_Init called".to_string());
             let res = get_lib_instance!($variable, $variable_type).xt_init(XtVersion::try_from(nVersion).unwrap(),
             XtInitFlags::from_bits_truncate(nFlags),
             Window::new(hMainWnd), XtLicenseInfo {});
@@ -28,7 +26,8 @@ macro_rules! export_xt_init {
             match res {
                 Ok(ret) => ret as i32,
                 Err(e) => {
-                    warn!("{}", e);
+
+                    Application::log(format!("{}", e));
                     XtInitReturn::PreventFurtherUseOfDll as i32
                 }
             }
@@ -52,18 +51,14 @@ macro_rules! export_xt_done {
         #[allow(non_snake_case, unused_variables)]
         pub extern "C" fn XT_Done(lpReserved: PVOID)
             -> LONG {
-            debug!("XT_Done called");
+            Application::log(format!("XT_Done called"));
             get_lib_instance!($variable, $variable_type).xt_done();
 
             //uninitalize raw api
             unsafe {
-                RAW_API = None;
-                $variable = None;
+                let _ = RAW_API.take();
+                let _ = $variable.take();
             }
-            
-
-            
-
             0
         }
     };
@@ -75,7 +70,7 @@ macro_rules! export_xt_about {
         #[allow(non_snake_case, unused_variables)]
         pub extern "C" fn XT_About(hParentWnd: HANDLE, lpReserved: PVOID)
             -> LONG {
-            debug!("XT_About called");
+            Application::log(format!("XT_About called"));
             get_lib_instance!($variable, $variable_type).xt_about(Window::new(hParentWnd));
             0
         }
@@ -88,11 +83,11 @@ macro_rules! export_xt_prepare {
         #[allow(non_snake_case, unused_variables)]
         pub extern "C" fn XT_Prepare(hVolume: HANDLE, hEvidence: HANDLE,  nOpType: DWORD, lpReserved: PVOID
         ) -> LONG {
-            debug!("XT_Prepare called");
+            Application::log(format!("XT_Prepare called"));
 
             let opt_op_type = XtPrepareOpType::try_from(nOpType);
             if opt_op_type.is_err() {
-                error!("error in parsing nOpType argument");
+                Application::log(format!("error in parsing nOpType argument"));
                 return XtPrepareReturn::Negative(XtPrepareNegativeReturn::JustCallXtFinalize).into();
             }
 
@@ -104,7 +99,7 @@ macro_rules! export_xt_prepare {
             match res {
                 Ok(ret) => ret.into(),
                 Err(e) => {
-                    warn!("{}", e);
+                    Application::log(format!("{}", e));
                     XtPrepareNegativeReturn::JustCallXtFinalize.into()
                 }
             }
@@ -119,10 +114,10 @@ macro_rules! export_xt_finalize {
         #[allow(non_snake_case, unused_variables)]
         pub extern "C" fn XT_Finalize(hVolume: HANDLE, hEvidence: HANDLE,  nOpType: DWORD, lpReserved: PVOID
         ) -> LONG {
-            debug!("XT_Finalize called");
+            Application::log(format!("XT_Finalize called"));
             let opt_op_type = XtPrepareOpType::try_from(nOpType);
             if opt_op_type.is_err() {
-                error!("error in parsing nOpType argument");
+                Application::log(format!("error in parsing nOpType argument"));
                 return XtFinalizeReturn::Ok.into();
             }
 
@@ -134,7 +129,7 @@ macro_rules! export_xt_finalize {
             match res {
                 Ok(ret) => ret.into(),
                 Err(e) => {
-                    warn!("{}", e);
+                    Application::log(format!("{}", e));
                     XtPrepareNegativeReturn::JustCallXtFinalize.into()
                 }
             }
@@ -156,7 +151,7 @@ macro_rules! export_xt_process_item {
                      ret.into() 
                 },
                 Err(e) => {
-                    warn!("{}", e);
+                    Application::log(format!("{}", e));
                     XtProcessItemReturn::Ok.into()
                 }
             }
@@ -171,7 +166,7 @@ macro_rules! export_xt_process_item_ex {
         pub extern "C" fn XT_ProcessItemEx(nItemID: LONG, hItem: HANDLE,  lpReserved: PVOID) -> LONG {
             let res_item = ItemHandle::new(hItem, Item::new(nItemID));
             if res_item.is_err() {
-                warn!("FATAL: failed to parse hItem Argument");
+                Application::log(format!("FATAL: failed to parse hItem Argument"));
                 return XtProcessItemExReturn::StopCurrentOperation.into();
             }
 
@@ -180,7 +175,7 @@ macro_rules! export_xt_process_item_ex {
             match res {
                 Ok(ret) => ret.into(),
                 Err(e) => {
-                    warn!("{}", e);
+                    Application::log(format!("{}", e));
                     XtProcessItemExReturn::Ok.into()
                 }
             }
@@ -231,9 +226,7 @@ macro_rules! needed_use_declarations {
     () => {
         use winapi::shared::minwindef::*;
         use winapi::shared::ntdef::*;
-        use simplelog::{WriteLogger, LevelFilter, Config};
 
-        use log::{debug, error, info, warn};
         use $crate::xwf::raw_api::*;
         use $crate::xwf::api::evidence::*;
         use $crate::xwf::api::item::*;
