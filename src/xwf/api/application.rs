@@ -5,6 +5,7 @@ use crate::xwf::api::util::{buf_to_wchar_cstr, string_to_wchar_cstr};
 use crate::xwf::xwf_types::{OutputMessageFlags, ProgressFlags};
 use crate::xwf::raw_api::RAW_API;
 
+use super::error::XwfError;
 use super::util::wchar_ptr_to_string;
 
 pub struct Application {
@@ -46,8 +47,7 @@ impl Application {
             Some(wchar_ptr_to_string(w_buf.as_mut_ptr()))
         } else {
             None
-        }
-        
+        }        
     }
 
     pub fn show_progress(caption: String, flags: ProgressFlags) {
@@ -58,8 +58,12 @@ impl Application {
         (get_raw_api!().set_progress_description)(string_to_wchar_cstr(&caption), )
     }
 
-    pub fn should_stop() -> bool {
-        (get_raw_api!().should_stop)() != 0
+    pub fn should_stop() -> Result<(), XwfError> {
+        if (get_raw_api!().should_stop)() != 0 {
+            Err(XwfError::OperationAbortedByUser)
+        } else {
+            Ok(())
+        }
     }
     pub fn hide_progress() {
         (get_raw_api!().hide_progress)()
@@ -75,4 +79,56 @@ impl Application {
         (get_raw_api!().set_progress_percentage)(percentage);
     }
 
+}
+
+
+#[macro_export]
+macro_rules! xwfinfo {
+    
+    ($($arg:tt)*) => {{
+        let res = std::fmt::format(format_args!($($arg)*));
+        
+        Application::output_string(format!("{} [INFO]: {}", chrono::offset::Local::now().format("%H:%M:%S"), res), $crate::xwf::xwf_types::OutputMessageFlags::empty())
+    }}
+}
+
+#[macro_export]
+macro_rules! xwfwarn {
+    
+    ($($arg:tt)*) => {{
+        let res = std::fmt::format(format_args!($($arg)*));
+        
+        Application::output_string(format!("{} [WARN]: {}", chrono::offset::Local::now().format("%H:%M:%S"), res), $crate::xwf::xwf_types::OutputMessageFlags::empty())
+    }}
+}
+
+#[macro_export]
+macro_rules! xwferror {
+    
+    ($($arg:tt)*) => {{
+        let res = std::fmt::format(format_args!($($arg)*));
+        
+        Application::output_string(format!("{} [ERROR]: {}", chrono::offset::Local::now().format("%H:%M:%S"), res), $crate::xwf::xwf_types::OutputMessageFlags::empty())
+    }}
+}
+
+
+#[macro_export]
+#[cfg(feature = "debug_output")]
+macro_rules! xwfdebug {
+    
+    ($($arg:tt)*) => {{
+        let res = std::fmt::format(format_args!($($arg)*));
+        
+        Application::output_string(format!("{} [DEBUG]: {}", chrono::offset::Local::now().format("%H:%M:%S"), res), $crate::xwf::xwf_types::OutputMessageFlags::empty())
+    }}
+}
+
+
+#[macro_export]
+#[cfg(not(feature = "debug_output"))]
+macro_rules! xwfdebug {
+    
+    ($($arg:tt)*) => {{
+    }}
 }

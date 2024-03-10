@@ -49,6 +49,8 @@ pub struct RawApi {
     pub get_extracted_metadata: FnXwfGetExtractedMetadata,
     pub get_metadata_ex: FnXwfGetMetadataEx,
     pub release_mem: FnXwfReleaseMem,
+    pub get_item_ofs: FnXwfGetItemOfs,
+    pub get_comment: FnXwfGetComment,
 }
 
 impl RawApi {
@@ -116,6 +118,9 @@ impl RawApi {
                get_extracted_metadata: RawApi::load_method(h_module, cstr!(XWF_GetExtractedMetadata))?,
                get_metadata_ex: RawApi::load_method(h_module, cstr!(XWF_GetMetadataEx))?,
                release_mem: RawApi::load_method(h_module, cstr!(XWF_ReleaseMem))?,
+               get_item_ofs: RawApi::load_method(h_module, cstr!(XWF_GetItemOfs))?,
+               get_comment: RawApi::load_method(h_module, cstr!(XWF_GetComment))?,
+
             })
         }
     }

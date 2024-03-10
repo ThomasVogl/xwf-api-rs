@@ -2,6 +2,9 @@ use winapi::shared::minwindef::{BOOL, BYTE, DWORD, LPBOOL, LPLONG, LPVOID, PDWOR
 use winapi::shared::ntdef::{LONGLONG, LONG, HANDLE, WCHAR, LPWCH, PVOID, PLONG, LPWSTR};
 use winapi::ctypes::{__int64};
 
+type LPINT64 = *mut i64;
+
+
 #[allow(non_snake_case, unused_variables)]
 pub type FnXwfOutputMessage = extern "stdcall" fn(lpMessage: *const WCHAR, nFlags: DWORD);
 #[allow(non_snake_case, unused_variables)]
@@ -256,6 +259,19 @@ pub type FnXwfGetMetadataEx = extern "stdcall" fn(
 pub type FnXwfReleaseMem = extern "stdcall" fn(
     lpBuffer: PVOID,
 ) -> BOOL;
+
+
+#[allow(non_snake_case, unused_variables)]
+pub type FnXwfGetItemOfs = extern "stdcall" fn(
+    nItemID: LONG ,
+    nDefOfs: LPINT64,
+    nStartSector: LPINT64,
+);
+
+#[allow(non_snake_case, unused_variables)]
+pub type FnXwfGetComment = extern "stdcall" fn(
+    nItemID: LONG ,
+) -> LPWSTR;
 
 
 

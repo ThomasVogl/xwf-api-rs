@@ -15,6 +15,7 @@ pub enum XwfError {
     HashValueNotAvailable,
     GivenBufferToSmallForContent,
     NoEvidenceAvaible,
+    OperationAbortedByUser,
     IoError(io::Error),
 }
 
@@ -33,6 +34,7 @@ impl Display for XwfError {
             XwfError::HashValueNotAvailable => write!(f, "expected hash value is not available"),
             XwfError::GivenBufferToSmallForContent => write!(f, "given buffer to XWF was to small for the content"),
             XwfError::NoEvidenceAvaible => write!(f, "expected an evidence for processing"),
+            XwfError::OperationAbortedByUser => write!(f, "current operation aborted by user"),
             XwfError::IoError(e) => write!(f, "io error occurred: {}", e),
         }
     }

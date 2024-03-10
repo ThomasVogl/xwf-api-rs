@@ -1,13 +1,12 @@
 use bitflags::bitflags;
 use chrono::{DateTime, Local, NaiveDateTime, Utc};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use super::api::error::XwfError;
 
 bitflags! {
 
-    #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
-    #[serde(transparent)]
+    #[derive(Serialize, Debug, PartialEq, Eq)]
     pub struct ItemInfoFlags: u64 {
         const IsDirectory                           = 0x00000001;
         const HasChildObjects                       = 0x00000002;
@@ -102,7 +101,7 @@ bitflags! {
         // The source may set any bits
         const _ = !0;
     }
-    #[derive(Clone)]
+    #[derive(Clone, Serialize, PartialEq, Eq, Debug)]
     pub struct ReportTableFlags: u32 {
         const HintByApplication             = 0x0001; //hint for user by application
         const CreatedByUser                 = 0x0002; //created manually by the user
@@ -111,6 +110,8 @@ bitflags! {
         const SelectedForFilter             = 0x0020; //selected for the label/report table filter
         const SelectedForNewAssociations    = 0x0040; //selected for new assocations
         const RepresentsSearchTerm          = 0x0080; //represents a search term
+        const NotDocumented1                = 0x0100; //flag not documented in XWF API but was observed
+        const NotDocumented2                = 0x1000; //flag not documented in XWF API but was observed
         const DetectedObjectInPhoto         = 0x2000; //detected object in photo
         const RepresentsDuplicateFiles      = 0x4000; //represents a group of duplicate files
         const OfferedForSelectionInReport   = 0x8000; //offered for selection in the report
@@ -299,7 +300,7 @@ pub enum PropType {
     NumberOfDataWindow      = 16,
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Serialize)]
 pub enum ItemInfoClassification {
     NormalFile                            = 0x00, //normal file
     HfsResourceFork                       = 0x04, //HFS resource fork
@@ -477,7 +478,7 @@ impl std::convert::TryFrom<u32> for XtPrepareOpType {
         }
     }
 }
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Serialize)]
 pub enum FileFormatConsistency {
     Unknown = 0,
     Ok = 1,
@@ -502,7 +503,7 @@ impl TryFrom<i32> for FileFormatConsistency {
         }
     }
 }
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Serialize)]
 pub enum ItemInfoDeletion {
     Existing                    = 0,   //existing
     PossiblyReverable           = 1,   //previously existing, possibly recoverable
@@ -538,7 +539,7 @@ impl TryFrom<i64> for ItemInfoDeletion {
 }
 
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Serialize)]
 pub enum FileTypeStatus {
     NotVerified = 0,
     TooSmall = 1,
@@ -573,7 +574,7 @@ impl TryFrom<i32> for FileTypeStatus {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Serialize)]
 pub enum FileTypeCategory {
     Picture,
     Word,
@@ -657,7 +658,7 @@ impl From<String> for FileTypeCategory {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Debug)]
 pub enum XwfDateTime {
     Utc(DateTime<Utc>),            //timestamp is given in UTC
     Local(DateTime<Local>),        //timestamp is given in local time zone
@@ -693,5 +694,6 @@ impl PartialEq for XwfDateTime {
 }
 
 impl Eq for XwfDateTime {}
+
 
 

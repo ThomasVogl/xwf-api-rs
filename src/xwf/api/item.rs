@@ -5,13 +5,13 @@ use std::ops::BitOr;
 use std::path::Path;
 use std::ptr::null_mut;
 use std::str::FromStr;
-use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
+use chrono::{DateTime, TimeZone, Utc};
 
 use std::hash::{Hash, Hasher};
 
 use winapi::shared::minwindef::{BOOL, DWORD, LPVOID, PDWORD};
 use winapi::shared::ntdef::{HANDLE, LPWSTR};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use crate::get_raw_api;
 use crate::xwf::api::util::{string_to_wchar_cstr, wchar_ptr_to_string, wchar_str_to_string, wchar_str_to_string_expect_term};
 use crate::xwf::api::error::XwfError;
@@ -21,6 +21,7 @@ use crate::xwf::raw_api::RAW_API;
 use crate::xwf::api::volume::{HashType, Volume};
 use crate::xwf::xwf_types::{AddReportTableFlags, FileFormatConsistency, FileTypeCategory, FileTypeStatus, ItemInfoClassification, ItemInfoDeletion, ItemInfoFlags, ItemTypeFlags, OpenItemFlags, PropType, XwfDateTime, XwfItemInfoTypes};
 
+use super::application::Application;
 use super::util::char_ptr_to_string;
 
 const CHUNK_SIZE: i64 = 65536;
@@ -72,10 +73,11 @@ impl Hash for Item {
 }
 
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct UniqueItemId {
     pub item_id: i32,
     pub evidence_id: u32,
+    pub short_ev_id: u16,
 }
 
 impl PartialOrd for UniqueItemId {
@@ -93,10 +95,11 @@ impl Ord for UniqueItemId {
 }
 
 impl UniqueItemId {
-    pub fn new(evidence_id: u32, item_id: u32) -> UniqueItemId {
+    pub fn new(evidence_id: u32, short_ev_id: u16, item_id: u32) -> UniqueItemId {
         UniqueItemId {
             item_id: item_id as i32,
             evidence_id: evidence_id,
+            short_ev_id: short_ev_id
         }
     }
     pub fn item(&self) -> Item {
@@ -108,24 +111,17 @@ impl UniqueItemId {
     }
 }
 
-impl From<i64> for UniqueItemId {
-    fn from(value: i64) -> Self {
-        UniqueItemId { 
-            item_id: (value & 0x00000000FFFFFFFFi64) as i32 , 
-            evidence_id: (value >> 32) as u32 
-        }
-    }
-}
-
-impl Into<i64> for UniqueItemId {
-    fn into(self) -> i64 {
-        (self.evidence_id as i64) << 32 | (self.item_id as i64)
-    }
-}
-
 impl Display for UniqueItemId {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}-{}", self.evidence_id, self.item_id)
+        write!(f, "{}-{}", self.short_ev_id, self.item_id)
+    }
+}
+
+impl Serialize for UniqueItemId {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer {
+        serializer.serialize_str(self.to_string().as_str())
     }
 }
 
@@ -296,7 +292,7 @@ impl Item {
 
 
                 if time_config.1 {
-                    let time = NaiveDateTime::from_timestamp_opt(unix_epoch_sec, nsec_fraction)?;
+                    let time = DateTime::from_timestamp(unix_epoch_sec, nsec_fraction)?.naive_utc();
                     return Some(XwfDateTime::NoTimezone(time));
                 } else {
                     let time = Utc.timestamp_opt(unix_epoch_sec, nsec_fraction).unwrap();
@@ -425,7 +421,40 @@ impl Item {
         } else {
             Ok(vec_assocs)
         }
+    }
 
+    pub fn get_comment(&self) -> Option<String>  {
+        let ptr_wstr = (get_raw_api!().get_comment)(self.item_id);
+
+        if ptr_wstr == null_mut() {
+            None
+        } else {
+            Some(wchar_ptr_to_string(ptr_wstr))
+        }
+
+    }
+
+    pub fn get_item_offset(&self) -> Option<(i64, i64)>{
+        let mut def_ofs = 0i64;
+        let mut start_sector = 0i64;
+
+        let ptr_def_ofs: *mut i64= &mut def_ofs;
+        let ptr_start_sector: *mut i64 = &mut start_sector;
+
+
+        (get_raw_api!().get_item_ofs)(self.item_id,ptr_def_ofs, ptr_start_sector);
+
+        if ( start_sector < 0 ) || (def_ofs == 0) || ((def_ofs & 0xFFFFFFFF) == 0xFFFFFFFF) {
+            return None;
+        }
+
+        if def_ofs < 0 {
+            def_ofs = def_ofs.abs();
+        }
+
+        
+
+        Some((def_ofs, start_sector))
     }
 
     pub fn get_extracted_metadata(&self) -> Option<Vec<String>>{
@@ -466,7 +495,8 @@ impl Item {
     pub fn unique_id(&self, evidence: &Evidence) -> UniqueItemId {
         UniqueItemId {
             item_id: self.item_id,
-            evidence_id: evidence.get_id()
+            evidence_id: evidence.get_id(),
+            short_ev_id: evidence.get_short_id()
         }
     }
 }
@@ -580,6 +610,8 @@ impl ItemHandle {
 
         while num_bytes_to_read  > 0 {
 
+            Application::should_stop()?;
+
             let bytes_read = size-num_bytes_to_read;
             
 
@@ -616,6 +648,8 @@ impl ItemHandle {
 
 
         while num_bytes_to_read  > 0 {
+
+            Application::should_stop()?;
 
             let bytes_read = size-num_bytes_to_read;
 

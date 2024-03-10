@@ -6,6 +6,7 @@ use winapi::um::winnt::{LPWSTR, PVOID};
 use crate::get_raw_api;
 use crate::xwf::api::volume::Volume;
 use crate::xwf::api::error::XwfError;
+
 use crate::xwf::api::util::{wchar_ptr_to_string, wchar_str_to_string};
 use crate::xwf::raw_api::RAW_API;
 use crate::xwf::xwf_types::{EvObjPropFlags, EvObjPropType};
@@ -14,6 +15,8 @@ use crate::xwf::xwf_types::{EvObjPropFlags, EvObjPropType};
 pub struct Evidence {
     evidence_handle: HANDLE,
     child_evidence_id: Option<u32>,
+    id: u32,
+    short_id: u16
 }
 
 #[repr(packed(1))]
@@ -74,18 +77,20 @@ impl Iterator for EvidenceIterator {
     }
 }
 
-
-
-
 impl Evidence {
     pub fn new(evidence_handle: HANDLE) -> Option<Evidence> {
         if evidence_handle == null_mut() {
             return None
         }
 
+        let id = Evidence::get_id_via_api(evidence_handle);
+        let short_id = Evidence::get_short_id_via_api(evidence_handle);
+
         Some(Evidence{
             evidence_handle,
             child_evidence_id: None,
+            id: id,
+            short_id: short_id,
         })  
     }
 
@@ -158,9 +163,22 @@ impl Evidence {
         Some(ret)
     }
 
-    pub fn get_id(&self) -> u32 {
-        let ret = (get_raw_api!().get_ev_obj_prop)(self.evidence_handle, EvObjPropType::ObjId as DWORD, null_mut());
+    pub fn get_id_via_api(ev: HANDLE) -> u32 {
+        let ret = (get_raw_api!().get_ev_obj_prop)(ev, EvObjPropType::ObjId as DWORD, null_mut());
         ret as u32
+    }
+
+    pub fn get_short_id_via_api(ev: HANDLE) -> u16 {
+        let ret = (get_raw_api!().get_ev_obj_prop)(ev, EvObjPropType::ShortEvObjId as DWORD, null_mut());
+        ret as u16
+    }
+
+    pub fn get_id(&self) -> u32 {
+        self.id
+    }
+
+    pub fn get_short_id(&self) -> u16 {
+        self.short_id
     }
 
     pub fn get_parent_id(&self) -> Option<u32> {

@@ -18,3 +18,6 @@ serde = { version = "1.0.190", features = ["derive"] }
 
 [lib]
 crate-type = ["lib"]
+
+[features]
+debug_output = []

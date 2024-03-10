@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::ptr::null_mut;
+use serde::Serialize;
 use winapi::shared::minwindef::LPVOID;
 use winapi::shared::ntdef::{LONG, LPWSTR, PLONG};
 use chrono::{DateTime, Utc};
@@ -15,7 +16,7 @@ use crate::xwf::raw_api::RAW_API;
 
 
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Debug)]
 pub struct ReportTable {
     pub name: String,
     pub id: u16,
