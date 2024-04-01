@@ -77,6 +77,16 @@ impl Iterator for EvidenceIterator {
     }
 }
 
+impl EvidenceIterator {
+    pub fn new() -> EvidenceIterator {
+        match Evidence::get_first_evidence() {
+            Some(ev) => ev.iter(),
+            None => EvidenceIterator{ current_ev: null_mut()}
+        }
+
+    }
+}
+
 impl Evidence {
     pub fn new(evidence_handle: HANDLE) -> Option<Evidence> {
         if evidence_handle == null_mut() {

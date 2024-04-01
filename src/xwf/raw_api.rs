@@ -51,6 +51,9 @@ pub struct RawApi {
     pub release_mem: FnXwfReleaseMem,
     pub get_item_ofs: FnXwfGetItemOfs,
     pub get_comment: FnXwfGetComment,
+    pub set_item_parent: FnXwfSetItemParent,
+    pub set_item_size: FnXwfSetItemSize,
+    pub create_file: FnXwfCreateFile,
 }
 
 impl RawApi {
@@ -120,6 +123,9 @@ impl RawApi {
                release_mem: RawApi::load_method(h_module, cstr!(XWF_ReleaseMem))?,
                get_item_ofs: RawApi::load_method(h_module, cstr!(XWF_GetItemOfs))?,
                get_comment: RawApi::load_method(h_module, cstr!(XWF_GetComment))?,
+               set_item_parent: RawApi::load_method(h_module, cstr!(XWF_SetItemParent))?,
+               set_item_size: RawApi::load_method(h_module, cstr!(XWF_SetItemSize))?,
+               create_file: RawApi::load_method(h_module, cstr!(XWF_CreateFile))?,
 
             })
         }

@@ -1,6 +1,9 @@
+use std::mem::size_of;
+
 use bitflags::bitflags;
 use chrono::{DateTime, Local, NaiveDateTime, Utc};
 use serde::Serialize;
+use winapi::{ctypes::__int64, shared::minwindef::{DWORD, LPVOID}};
 
 use super::api::error::XwfError;
 
@@ -210,6 +213,15 @@ bitflags! {
         const TextualDescriptionType = 0x20000000; //receive a textual description of the file type instead (e.g. “JPEG” or “Dynamic-Link Library”)
         const TextualDescriptionCategory = 0x40000000; //receive a textual designation of the category that the file type belongs to instead (e.g. “Pictures” or “Programs”)
         const ReceiveTypeStatus = 0x80000000; //receive type status as usual in the lowest byte, but file format consistency in the second-lowest byte (0=unknown, 1=OK, 2=irregular), v19.3 and later
+        const _ = !0;
+    }
+
+    pub struct FileCreationFlags: u32 {
+        const MoreItemsToBeCreated      = 0x00000001;
+        const ExcerptFromParent         = 0x00000002;
+        const AttachExternalFile        = 0x00000004;
+        const KeepExternalFile          = 0x00000008;
+        const FileContentsFromBuffer    = 0x00000010;
         const _ = !0;
     }
 
@@ -694,6 +706,24 @@ impl PartialEq for XwfDateTime {
 }
 
 impl Eq for XwfDateTime {}
+
+
+#[repr(packed(2))]
+pub struct SrcInfo {
+   pub n_struct_size: DWORD,
+   pub n_buf_size: __int64 ,
+   pub p_buffer: LPVOID
+}
+
+impl SrcInfo {
+    pub fn from_buffer(data: &mut [u8]) -> SrcInfo {
+        SrcInfo {
+            n_struct_size: size_of::<SrcInfo>() as u32,
+            n_buf_size: data.len() as __int64,
+            p_buffer: data.as_mut_ptr() as LPVOID
+        }
+    }
+}
 
 
 

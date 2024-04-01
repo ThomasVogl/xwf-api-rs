@@ -8,6 +8,7 @@ use crate::xwf::raw_api::RAW_API;
 use super::error::XwfError;
 use super::util::wchar_ptr_to_string;
 
+
 pub struct Application {
 
 }

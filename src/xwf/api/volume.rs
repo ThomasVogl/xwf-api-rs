@@ -267,6 +267,29 @@ impl Volume {
     }
 
 
+    pub fn get_child_items_single_with_pred<F>(&self, parent_item: &Item,  mut pred: F) -> Result<Vec<Item>, XwfError>
+        where
+            F: FnMut(&Item) -> bool
+    {
+        let mut ret: Vec<Item> = Vec::new();
+
+        if parent_item.get_item_info_flags().is_ok_and(|f| !f.contains(ItemInfoFlags::HasChildObjects)) {
+            return Ok(ret);
+        }
+
+        let it = ItemIterator::create(parent_item.item_id as u32, self.get_item_count());
+        
+        it
+        .filter(|i| pred(i))
+        .filter(|i| i.get_parent_item().is_some_and(|i| i == *parent_item) )
+        .for_each(|i| {
+            ret.push(i)
+        });
+
+        Ok(ret)
+    }
+
+
     pub fn get_recursive_child_items_with_pred<F>(&self, parent_items: &HashSet<Item>,  mut pred: F) -> Result<HashMap<Item, Vec<Item>>, XwfError>
         where
             F: FnMut(&Item) -> Result<bool, XwfError>

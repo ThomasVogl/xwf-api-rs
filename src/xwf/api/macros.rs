@@ -229,6 +229,8 @@ macro_rules! export_all_functions_ex {
 #[macro_export]
 macro_rules! needed_use_declarations {
     () => {
+        use chrono::prelude::*;
+
         use winapi::shared::minwindef::*;
         use winapi::shared::ntdef::*;
 

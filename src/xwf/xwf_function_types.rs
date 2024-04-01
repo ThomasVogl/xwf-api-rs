@@ -274,4 +274,27 @@ pub type FnXwfGetComment = extern "stdcall" fn(
 ) -> LPWSTR;
 
 
+#[allow(non_snake_case, unused_variables)]
+pub type FnXwfCreateFile = extern "stdcall" fn(
+    pName: LPWSTR,
+    nCreationFlags: DWORD,
+    nParentItemID: LONG,
+    pSourceInfo: PVOID
+) -> LONG;
+
+#[allow(non_snake_case, unused_variables)]
+pub type FnXwfSetItemSize = extern "stdcall" fn(
+    nItemID: LONG,
+    nSize: __int64,
+);
+
+
+#[allow(non_snake_case, unused_variables)]
+pub type FnXwfSetItemParent = extern "stdcall" fn(
+    nChildItemID: LONG,
+    nParentItemID: LONG
+);
+
+
+
 

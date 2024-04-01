@@ -10,7 +10,7 @@ use chrono::{DateTime, TimeZone, Utc};
 use std::hash::{Hash, Hasher};
 
 use winapi::shared::minwindef::{BOOL, DWORD, LPVOID, PDWORD};
-use winapi::shared::ntdef::{HANDLE, LPWSTR};
+use winapi::shared::ntdef::{HANDLE, LPWSTR, PVOID};
 use serde::Serialize;
 use crate::get_raw_api;
 use crate::xwf::api::util::{string_to_wchar_cstr, wchar_ptr_to_string, wchar_str_to_string, wchar_str_to_string_expect_term};
@@ -19,7 +19,7 @@ use crate::xwf::api::evidence::Evidence;
 use crate::xwf::api::traits::NativeHandle;
 use crate::xwf::raw_api::RAW_API;
 use crate::xwf::api::volume::{HashType, Volume};
-use crate::xwf::xwf_types::{AddReportTableFlags, FileFormatConsistency, FileTypeCategory, FileTypeStatus, ItemInfoClassification, ItemInfoDeletion, ItemInfoFlags, ItemTypeFlags, OpenItemFlags, PropType, XwfDateTime, XwfItemInfoTypes};
+use crate::xwf::xwf_types::*;
 
 use super::application::Application;
 use super::util::char_ptr_to_string;
@@ -157,11 +157,11 @@ impl Item {
 
 
 
-    pub fn open(&self, volume: &Volume, flags: Vec<OpenItemFlags>) -> Result<ItemHandle, XwfError> {
+    pub fn open(&self, volume: &Volume, flags: OpenItemFlags) -> Result<ItemHandle, XwfError> {
         let handle = (get_raw_api!().open_item)(
             volume.handle(),
             self.item_id,
-            OpenItemFlags::from_iter(flags).bits());
+            flags.bits());
 
         if handle == null_mut() {
             return Err(XwfError::FailedToGetObjectHandle);
@@ -224,6 +224,35 @@ impl Item {
             Ok(())
         } else {
             Err(XwfError::XwfFunctionCallFailed("set_item_information"))
+        }
+    }
+
+
+    pub fn set_item_info_classification(&self, classification: ItemInfoClassification) -> Result<(), XwfError> {
+
+        let result = (get_raw_api!().set_item_information)(self.item_id, 5, classification as i64);
+
+        if result != 0 {
+            Ok(())
+        } else {
+            Err(XwfError::XwfFunctionCallFailed("set_item_information"))
+        }
+    }
+
+
+    pub fn create_file(&self, name: &String, creation_flags: FileCreationFlags, src_info: &mut SrcInfo) -> Result<Item, XwfError> {
+
+        let wstr = string_to_wchar_cstr(name);
+
+        let p_src_info: *mut SrcInfo = src_info;
+
+
+        let result = (get_raw_api!().create_file)(wstr, creation_flags.bits(), self.item_id, p_src_info as PVOID);
+
+        if result < 0 {
+            Err(XwfError::XwfFunctionCallFailed("create_file"))
+        } else {
+            Ok(Item::new(result))
         }
     }
 
