@@ -212,6 +212,21 @@ macro_rules! export_all_functions {
     };
 }
 
+
+#[macro_export]
+macro_rules! export_without_process_item {
+    ($variable_name:ident, $variable_type:ty) => {
+
+        create_static_var!($variable_name, $variable_type);
+
+        export_xt_init!($variable_name, $variable_type);
+        export_xt_prepare!($variable_name, $variable_type);
+        export_xt_finalize!($variable_name, $variable_type);
+        export_xt_done!($variable_name, $variable_type);
+        export_xt_about!($variable_name, $variable_type);
+    };
+}
+
 #[macro_export]
 macro_rules! export_all_functions_ex {
     ($variable_name:ident, $variable_type:ty) => {
