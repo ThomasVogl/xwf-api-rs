@@ -297,25 +297,26 @@ impl Volume {
 
         let mut ret: HashMap<Item, Vec<Item>> = HashMap::new();
 
+
+        //initialize return HashMap
         parent_items.iter().for_each(|f| {
             ret.insert(*f, vec![]);
         });
 
-        let parent_items: HashSet<&Item> = parent_items.iter().filter(|p| {
-            p.get_item_info_flags().unwrap_or_default().contains(ItemInfoFlags::HasChildObjects)
-        }).collect();
+        let mut it = self.iter()?;
 
-        self.iter()?
-        .flat_map(|item| item.get_hierarchy().iter().map(|ancestor| (*ancestor, item)).collect::<Vec<(Item, Item)>>())
-        .filter_map(|i| parent_items.get(&i.0).map(|r: &&Item| -> (Item, Item) {(**r, i.1)}))
-        .filter( |i| pred(&i.1).unwrap_or(false))
-        .for_each(|f| {
-            match ret.get_mut(&f.0) {
-                Some(v) => {v.push(f.1);},
-                None => {ret.insert(f.0, vec![f.1]);}
-            };
-        });
+        while let Some(i) = it.next() {
 
+            if !pred(&i).unwrap_or(false) { continue; }
+
+            let hierarchy = i.get_hierarchy();
+            for p in hierarchy {
+                if ret.contains_key(&p) {
+                    ret.get_mut(&p).unwrap().push(i);
+                    break;
+                }
+            }
+        }
         Ok(ret)
     }
 

@@ -332,6 +332,7 @@ pub enum ItemInfoClassification {
     EmailAttachment                       = 0xF9, //e-mail attachment
     EmailMessage                          = 0xFA, //e-mail message
     IdnxRecordRemnant                     = 0xFD, //INDX record remnant
+    Unknown = 0xFF
 }
 
 impl TryFrom<i64> for ItemInfoClassification {
@@ -358,7 +359,7 @@ impl TryFrom<i64> for ItemInfoClassification {
             x if x == Self::EmailAttachment as i64                  => Ok(Self::EmailAttachment),
             x if x == Self::EmailMessage as i64                     => Ok(Self::EmailMessage),
             x if x == Self::IdnxRecordRemnant as i64                => Ok(Self::IdnxRecordRemnant),
-            _ => Err(XwfError::InvalidEnumValue(("ItemInfoClassification", value)))
+            _ => Ok(Self::Unknown)
         }
     }
 }
