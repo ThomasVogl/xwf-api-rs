@@ -11,7 +11,7 @@ use std::hash::{Hash, Hasher};
 
 use winapi::shared::minwindef::{BOOL, DWORD, LPVOID, PDWORD};
 use winapi::shared::ntdef::{HANDLE, LPWSTR, PVOID};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use crate::get_raw_api;
 use crate::xwf::api::util::{string_to_wchar_cstr, wchar_ptr_to_string, wchar_str_to_string, wchar_str_to_string_expect_term};
 use crate::xwf::api::error::XwfError;
@@ -20,6 +20,8 @@ use crate::xwf::api::traits::NativeHandle;
 use crate::xwf::raw_api::RAW_API;
 use crate::xwf::api::volume::{HashType, Volume};
 use crate::xwf::xwf_types::*;
+
+use regex::Regex;
 
 use super::application::Application;
 use super::util::char_ptr_to_string;
@@ -117,11 +119,43 @@ impl Display for UniqueItemId {
     }
 }
 
+impl TryFrom<String> for UniqueItemId {
+    type Error = Box<dyn std::error::Error>;
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let re = Regex::new(r"([0-9]+)-([0-9]+)")?;
+        let caps = re.captures(&value).ok_or(regex::Error::Syntax("invalid unique id syntax".to_string()))?;
+
+        let evidence_id: u16 = caps[1].parse()?;
+        let item_id: i32 = caps[2].parse()?;
+
+        Ok(UniqueItemId {
+            item_id: item_id,
+            evidence_id: evidence_id as u32,
+            short_ev_id: evidence_id }
+        )
+
+
+    }
+}
+
 impl Serialize for UniqueItemId {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer {
         serializer.serialize_str(self.to_string().as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for UniqueItemId {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de> {
+        
+        let re = Regex::new(r"([0-9]+)-([0-9]+)").map_err(serde::de::Error::custom)?;
+
+        let s: String = Deserialize::deserialize(deserializer)?;
+
+        UniqueItemId::try_from(s).map_err(serde::de::Error::custom)
     }
 }
 
