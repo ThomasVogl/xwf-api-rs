@@ -150,8 +150,6 @@ impl<'de> Deserialize<'de> for UniqueItemId {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de> {
-        
-        let re = Regex::new(r"([0-9]+)-([0-9]+)").map_err(serde::de::Error::custom)?;
 
         let s: String = Deserialize::deserialize(deserializer)?;
 
