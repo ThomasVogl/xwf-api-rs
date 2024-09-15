@@ -1,4 +1,4 @@
-use std::{fs::FileType, mem::size_of};
+use std::mem::size_of;
 
 use bitflags::bitflags;
 use chrono::{DateTime, Local, NaiveDateTime, Utc};

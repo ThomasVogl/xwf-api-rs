@@ -56,6 +56,8 @@ impl ReportTable {
         None
     }
 }
+
+#[derive(Clone)]
 pub struct Case {
     report_tables: HashMap<u16, ReportTable>,
     report_tables_by_name: HashMap<String, ReportTable>,
