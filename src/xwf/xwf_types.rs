@@ -335,6 +335,12 @@ pub enum ItemInfoClassification {
     Unknown = 0xFF
 }
 
+impl fmt::Display for ItemInfoClassification {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 impl TryFrom<i64> for ItemInfoClassification {
     type Error = XwfError;
 
