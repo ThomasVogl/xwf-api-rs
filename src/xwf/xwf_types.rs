@@ -1,4 +1,5 @@
 use std::mem::size_of;
+use std::fmt;
 
 use bitflags::bitflags;
 use chrono::{DateTime, Local, NaiveDateTime, Utc};
