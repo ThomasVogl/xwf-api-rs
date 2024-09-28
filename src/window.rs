@@ -1,6 +1,6 @@
 use std::ptr::null_mut;
 use winapi::shared::ntdef::HANDLE;
-use crate::xwf::api::traits::NativeHandle;
+use crate::traits::NativeHandle;
 
 pub struct Window {
     window_handle: HANDLE,

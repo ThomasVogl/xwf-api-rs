@@ -1,0 +1,13 @@
+[package]
+name = "xt-helloworld-rs"
+version = "0.0.1"
+edition = "2021"
+
+
+[lib]
+crate-type = ["cdylib"]
+
+
+
+[dependencies]
+xwf-api-rs = { path = "../..", features = ["debug_output"] }

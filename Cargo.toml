@@ -1,5 +1,5 @@
 [package]
-name = "xwf-rust"
+name = "xwf-api-rs"
 version = "0.1.0"
 edition = "2021"
 
@@ -16,6 +16,7 @@ log = "0.4.20"
 chrono = {  version = "0.4.31", features = ["serde"] }
 serde = { version = "1.0.190", features = ["derive"] }
 regex = "1.10.5"
+winsafe = { version = "0.0.22", features = ["gui"]}
 
 [lib]
 crate-type = ["lib"]

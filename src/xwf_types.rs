@@ -6,7 +6,7 @@ use chrono::{DateTime, Local, NaiveDateTime, Utc};
 use serde::{Deserialize, Deserializer, Serialize};
 use winapi::{ctypes::__int64, shared::minwindef::{DWORD, LPVOID}};
 
-use super::api::error::XwfError;
+use crate::error::XwfError;
 
 bitflags! {
 

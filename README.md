@@ -13,6 +13,11 @@ this binding enables seamless integration with the X-Tension API,
 facilitating the development of custom forensic tools and automation solutions 
 for digital forensics workflows.
 
+## Usage / Build Instructions
+documentation of this project is currently worked on and build / usage instructions will follow soon.
+Current state of the api may still be heavily changed during next weeks, 
+so it is not recommended yet to use this API productively.
+
 
 ## Project Goals
 - Translating all relevant features of XWF X-Tension API into Rust Language
