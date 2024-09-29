@@ -7,3 +7,5 @@ members = [
 ]
 
 
+[patch.'https://github.com/ThomasVogl/xwf-api-rs.git']
+xwf-api-rs = { path = "./xwf_api_rs" }

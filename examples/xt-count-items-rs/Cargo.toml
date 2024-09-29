@@ -10,8 +10,4 @@ crate-type = ["cdylib"]
 
 
 [dependencies]
-xwf-api-rs = { git = "https://github.com/ThomasVogl/xwf-api-rs.git", branch = "develop", features = ["debug_output"]}
-
-# remove below lines if you use this example project as boilerplate
-[patch.'https://github.com/ThomasVogl/xwf-api-rs.git']
-xwf-api-rs = { path = "../../xwf_api_rs" }
+xwf-api-rs = { version="1.0.0", git = "https://github.com/ThomasVogl/xwf-api-rs.git", tag = "1.0.0-pre.1", features = ["debug_output"]}

@@ -521,32 +521,14 @@ checksum = "7d6ad6cbd9c6e5144971e326303f0e453b61d82e4f72067fccf23106bccd8437"
 name = "xt-count-items-rs"
 version = "0.0.1"
 dependencies = [
- "xwf-api-rs 0.1.0",
+ "xwf-api-rs",
 ]
 
 [[package]]
 name = "xt-helloworld-rs"
 version = "0.0.1"
 dependencies = [
- "xwf-api-rs 0.1.0",
-]
-
-[[package]]
-name = "xwf-api-rs"
-version = "0.1.0"
-source = "git+https://github.com/ThomasVogl/xwf-api-rs.git?branch=develop#dd1ecaf9a1dacb2a28ef0eed351bfecc0c35ddf4"
-dependencies = [
- "bitflags",
- "chrono",
- "cstr",
- "hex",
- "log",
- "once_cell",
- "regex",
- "serde",
- "simplelog",
- "winapi",
- "winsafe",
+ "xwf-api-rs",
 ]
 
 [[package]]
