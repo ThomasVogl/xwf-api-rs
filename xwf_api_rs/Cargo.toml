@@ -1,6 +1,6 @@
 [package]
 name = "xwf-api-rs"
-version = "1.0.0-dev"
+version = "1.0.0"
 edition = "2021"
 authors = ["Thomas Vogl <thomas.vogl@respon.se>" ]
 description = "Unofficial Rust Bindings for X-Ways Forensics X-Tension API"
