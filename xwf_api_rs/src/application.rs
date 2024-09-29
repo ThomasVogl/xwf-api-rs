@@ -22,15 +22,15 @@ impl Application {
         (get_raw_api!().output_message)(s.as_ptr() ,flags.bits())
     }
 
-    pub fn output_string(msg: String, flags: OutputMessageFlags) {
+    pub fn output_string<S: AsRef<str>>(msg: S, flags: OutputMessageFlags) {
         (get_raw_api!().output_message)(winsafe::WString::from_str(&msg).as_ptr(), flags.bits())
     }
 
-    pub fn log(msg: String) {
+    pub fn log<S: AsRef<str>>(msg: S) {
         Self::output_string(msg, OutputMessageFlags::empty());
     }
 
-    pub fn get_user_input_integer(msg: String) -> Option<u64> {
+    pub fn get_user_input_integer<S: AsRef<str>>(msg: S)-> Option<u64> {
         let ret = (get_raw_api!().get_user_input)(unsafe { winsafe::WString::from_str(&msg).as_mut_ptr() }, null_mut(), 0, 0x1);
         if ret < 0 {
             None
@@ -39,7 +39,7 @@ impl Application {
         }
     }
 
-    pub fn get_user_input_str(msg: String, allow_empty: bool) -> Option<String> {
+    pub fn get_user_input_str<S: AsRef<str>>(msg: S, allow_empty: bool) -> Option<String> {
         let flags = if allow_empty {0x2} else {0x0};
         let mut s = winsafe::WString::new_alloc_buf(65535);
         let ret: i64 =  (get_raw_api!().get_user_input)(winsafe::WString::from_str(msg).as_ptr() as LPWSTR , unsafe {s.as_mut_ptr()},  s.buf_len() as u32, flags);
@@ -50,11 +50,11 @@ impl Application {
         }        
     }
 
-    pub fn show_progress(caption: String, flags: ProgressFlags) {
+    pub fn show_progress<S: AsRef<str>>(caption: S, flags: ProgressFlags) {
         (get_raw_api!().show_progress)(winsafe::WString::from_str(&caption).as_ptr() as LPWSTR, flags.bits())
     }
 
-    pub fn set_progress_description(caption: String) {
+    pub fn set_progress_description<S: AsRef<str>>(caption: S) {
         (get_raw_api!().set_progress_description)(winsafe::WString::from_str(&caption).as_ptr() as LPWSTR)
     }
 

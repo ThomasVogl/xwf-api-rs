@@ -6,11 +6,12 @@ use winapi::shared::minwindef::LPVOID;
 use winapi::shared::ntdef::{LONG, LPWSTR, PLONG};
 use chrono::{DateTime, Utc};
 use winsafe::WString;
+use crate::application::Application;
 use crate::get_raw_api;
-use crate::evidence::Evidence;
+use crate::evidence::{Evidence, EvidenceIterator};
 use crate::item::Item;
 use crate::error::XwfError;
-use crate::xwf_types::ReportTableFlags;
+use crate::xwf_types::{ProgressFlags, ReportTableFlags};
 use crate::raw_api::RAW_API;
 
 
@@ -77,15 +78,80 @@ pub struct CaseInfo {
 
 impl Case {
 
-    pub fn new() -> Result<Case, XwfError> {
-        let mut c = Case {
+    pub fn new() -> Case {
+        Case {
             report_tables: HashMap::new(),
             report_tables_by_name: HashMap::new(),
             report_table_map: HashMap::new(),
-        };
+        }
+    }
 
-        c.compute_report_table_cache()?;
-        Ok(c)
+    pub fn iterate_ext<F, R>(&self, item_consumer: F) -> Result<Vec<R>, XwfError>
+    where F: Fn(&Case, &Evidence, &Item) -> Result<R,XwfError> {
+        let mut ret:Vec<R> = Vec::new();
+
+        Application::show_progress("Iterating over all evidences and items", ProgressFlags::empty());
+
+        let mut evidence_iterator = EvidenceIterator::new();
+        while let Some(ev) = evidence_iterator.next() {
+
+            let vol = ev.open()?;
+            vol.select()?;
+
+            // get number of elements within volume
+            let num_items = vol.get_item_count();
+
+            // set progress description
+            Application::set_progress_description(format!("processing evidence \"{}\"", ev.get_name()?));
+            Application::set_progress_percentage(0, num_items);
+
+
+            // iterate over all items (number == item id)
+            for item_id in 0..num_items {
+                Application::should_stop()?;
+
+                let item = Item::new(item_id as i32);
+                ret.push(item_consumer(self, &ev, &item)?);
+                Application::set_progress_percentage(item_id+1, num_items);
+            }
+        }
+
+        Application::hide_progress();
+        Ok(ret)
+    }
+
+    pub fn iterate<F, R>(item_consumer: F) -> Result<Vec<R>, XwfError>
+    where F: Fn(Item) -> Result<R,XwfError> {
+
+        let mut ret:Vec<R> = Vec::new();
+
+        Application::show_progress("Iterating over all evidences and items", ProgressFlags::empty());
+
+        let mut evidence_iterator = EvidenceIterator::new();
+        while let Some(ev) = evidence_iterator.next() {
+
+            let vol = ev.open()?;
+            vol.select()?;
+
+            // get number of elements within volume
+            let num_items = vol.get_item_count();
+
+            // set progress description
+            Application::set_progress_description(format!("processing evidence \"{}\"", ev.get_name()?));
+            Application::set_progress_percentage(0, num_items);
+
+
+            // iterate over all items (number == item id)
+            for item_id in 0..num_items {
+                Application::should_stop()?;
+
+                ret.push(item_consumer(Item::new(item_id as i32))?);
+                Application::set_progress_percentage(item_id+1, num_items);
+            }
+        }
+
+        Application::hide_progress();
+        Ok(ret)
     }
 
     pub fn contained_in_report_table(&self, t: &Option<&ReportTable>, evidence: &Evidence, item: &Item) -> bool {
@@ -169,7 +235,7 @@ impl Case {
             return Err(XwfError::XwfFunctionCallFailed("get_case_prop"));
         }
 
-        let creation_date: DateTime<Utc> = DateTime::from_timestamp(creation / 10000000 - 11644473600, 0).ok_or(XwfError::InvalidInputArgument)?;
+        let creation_date: DateTime<Utc> = DateTime::from_timestamp( creation / 10000000 - 11644473600, 0).ok_or(XwfError::InvalidInputArgument)?;
         
         let buf_len = (get_raw_api!().get_case_prop)(null_mut(), 3, buf.as_mut_ptr() as LPVOID, buf.len() as LONG);
         if buf_len < 0 {

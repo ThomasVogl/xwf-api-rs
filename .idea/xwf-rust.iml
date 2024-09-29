@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="EMPTY_MODULE" version="4">
-  <component name="Go" enabled="true" />
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
-      <sourceFolder url="file://$MODULE_DIR$/examples" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/examples/xt-count-items-rs/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/examples/xt-helloworld-rs/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/xwf_api_rs/src" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/examples/xt-helloworld-rs/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
+      <excludeFolder url="file://$MODULE_DIR$/xwf_api_rs/target" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

@@ -289,8 +289,6 @@ impl Item {
         }
     }
 
-
-
     pub fn get_item_info(&self, infotype: XwfItemInfoTypes) -> Result<i64, XwfError> {
         let mut success: Box<BOOL> = Box::new(1);
         let success_ptr: *mut BOOL = &mut *success;
@@ -355,20 +353,20 @@ impl Item {
 
                 if time_config.1 {
                     let time = DateTime::from_timestamp(unix_epoch_sec, nsec_fraction)?.naive_utc();
-                    return Some(XwfDateTime::NoTimezone(time));
+                    Some(XwfDateTime::NoTimezone(time))
                 } else {
                     let time = Utc.timestamp_opt(unix_epoch_sec, nsec_fraction).unwrap();
 
                     if local_time {
-                        return Some(XwfDateTime::Local(DateTime::from(time)));
+                        Some(XwfDateTime::Local(DateTime::from(time)))
                     } else {
-                        return Some(XwfDateTime::Utc(time));
+                        Some(XwfDateTime::Utc(time))
 
                     }
                 }
             },
             Err(_) => {
-                return None;
+                None
             }
 
         }

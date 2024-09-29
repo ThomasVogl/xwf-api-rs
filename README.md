@@ -13,6 +13,18 @@ this binding enables seamless integration with the X-Tension API,
 facilitating the development of custom forensic tools and automation solutions 
 for digital forensics workflows.
 
+## Example Usage
+In _example_ subdirectory reside some sample projects that 
+shall demonstrate basic usage of the xwf-api-rs library 
+and can be used as a boilerplate for new projects.
+Currently following examples exist (some more advanced examples will follow in future)
+- **xt-helloworld-rs**
+  - shows a minimum working example for a X-Tension
+  - example for getting user inputs and showing progress bar
+- **xt-count-items-rs**
+  - shows how to iterate over evidences and items
+  - shows how to get some attributes of an item object
+
 ## Usage / Build Instructions
 documentation of this project is currently worked on and build / usage instructions will follow soon.
 Current state of the api may still be heavily changed during next weeks, 

@@ -1,5 +1,5 @@
 [package]
-name = "xt-helloworld-rs"
+name = "xt-count-items-rs"
 version = "0.0.1"
 edition = "2021"
 
@@ -10,8 +10,7 @@ crate-type = ["cdylib"]
 
 
 [dependencies]
-xwf-api-rs = { git = "https://github.com/ThomasVogl/xwf-api-rs.git", branch = "develop", features = ["debug_output"] }
-
+xwf-api-rs = { git = "https://github.com/ThomasVogl/xwf-api-rs.git", branch = "develop", features = ["debug_output"]}
 
 # remove below lines if you use this example project as boilerplate
 [patch.'https://github.com/ThomasVogl/xwf-api-rs.git']

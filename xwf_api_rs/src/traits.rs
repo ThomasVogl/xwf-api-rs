@@ -16,7 +16,6 @@ pub trait XTension {
 
     fn create() -> Self;
 
-    //TODO implement LicenseInfo argument, currently it is empty
     fn xt_init(&mut self, _version: XtVersion, _flags: XtInitFlags, _window: Option<Window>, _lic_info: XtLicenseInfo) -> Result<XtInitReturn, Self::XTensionError> {
         Ok(XtInitReturn::RunSingleThreaded)
     }
@@ -39,6 +38,4 @@ pub trait XTension {
     fn xt_finalize(&mut self, _volume: Option<Volume>, _evidence: Option<Evidence>, _op_type: XtPrepareOpType) -> Result<XtFinalizeReturn, Self::XTensionError> {
         Ok(XtFinalizeReturn::Ok)
     }
-
-    //TODO: implement XT_PrepareSearch and XT_ProcessSearchHit
 }
