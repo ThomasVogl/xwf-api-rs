@@ -49,8 +49,7 @@ Please note that in addition to the LGPLv3 license, the usage of the _X-Ways X-T
 Ensure that you comply with the terms and conditions set by _X-Ways Software Technology AG_ for the use of their software and API.
 
 ## Disclaimer
-This project is not affiliated with, sponsored, 
-or endorsed by _X-Ways Software Technology AG_ in any way.
+This project is not developed by or affiliated with _X-Ways Software Technology AG_ in any way.
 
 This project is provided "as is," without warranty of any kind, express or implied, 
 including but not limited to the warranties of merchantability, 
