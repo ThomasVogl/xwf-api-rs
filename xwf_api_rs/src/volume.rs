@@ -10,20 +10,7 @@ use crate::item::Item;
 use crate::xwf_types::*;
 use crate::raw_api::RAW_API;
 
-#[allow(dead_code)]
-enum VsPropType {
-    SpecialItemId = 10,
-    HashType1 =     20,
-    HashType2 =     21,
-    SetHashType1 =  25,
-    SetHashType2 =  26
-}
 
-pub enum VolumeNameType {
-    SHORT =  3,
-    NORMAL = 2,
-    LONG =   1
-}
 macro_rules! back_to_enum {
     ($(#[$meta:meta])* $vis:vis enum $name:ident {
         $($(#[$vmeta:meta])* $vname:ident $(= $val:expr)?,)*
@@ -45,7 +32,7 @@ macro_rules! back_to_enum {
         }
     }
 }
-
+#[cfg(feature="api_20_9")]
 back_to_enum! {
     #[derive(Copy, Clone)]
     pub enum HashType {
@@ -67,7 +54,34 @@ back_to_enum! {
     Tiger128 = 16,
     Tiger160 = 17,
     Tiger192 = 18,
+
+    MD5Folded = 19,
+    }
 }
+
+#[cfg(not(feature="api_20_9"))]
+back_to_enum! {
+    #[derive(Copy, Clone)]
+    pub enum HashType {
+    CS8 = 1,
+    CS16 = 2,
+    CS32 = 3,
+    CS64 = 4,
+    CRC16 = 5,
+    CRC32 = 6,
+    MD5 = 7,
+    SHA1 = 8,
+    SHA256 = 9,
+    RIPEMD128 = 10,
+    RIPEMD160 = 11,
+    MD4 = 12,
+    ED2K = 13,
+    ADLER32 = 14,
+    TigerTreeHash = 15,
+    Tiger128 = 16,
+    Tiger160 = 17,
+    Tiger192 = 18,
+    }
 }
 
 
@@ -92,6 +106,8 @@ impl HashType {
             HashType::Tiger128 => 16,
             HashType::Tiger160 => 20,
             HashType::Tiger192 => 24,
+            #[cfg(feature="api_20_9")]
+            HashType::MD5Folded => 16,
         }
     }
 }
@@ -105,7 +121,7 @@ impl ItemIterator {
     pub fn create(min:i32, max: i32) -> Self {
         Self {
             idx: min,
-            max: max
+            max
         }
     }
 }
@@ -149,11 +165,27 @@ impl Volume {
     }
 
     pub fn select(&self) -> Result<i32, XwfError> {
-        let ret = (get_raw_api!().select_volume_snapshot)(self.volume_handle);
-        if ret < 0 {
+
+        let num_items: LONG;
+        #[cfg(feature = "api_20_9")]
+        {
+            num_items = (get_raw_api!().select_volume_snapshot)(self.volume_handle);
+
+        }
+        #[cfg(not(feature = "api_20_9"))]
+        {
+            (get_raw_api!().select_volume_snapshot)(self.volume_handle);
+            num_items = self._get_item_count(false)?;
+        }
+
+        if num_items < 0 {
             return Err(XwfError::XwfFunctionCallFailed("select_volume_snapshot"));
         }
-        Ok(ret)
+        Ok(num_items)
+
+
+
+
     }
 
     pub fn get_hash_type(&self, get_secondary: bool) -> Option<HashType> {
@@ -182,11 +214,20 @@ impl Volume {
         }
     }
 
+    #[allow(unused_variables)]
     fn _get_item_count(&self, num_via_dbc: bool) -> Result<i32, XwfError> {
-        let arg: LPVOID = match num_via_dbc {
-            false => null_mut(),
-            true => 1 as LPVOID
-        };
+        let arg: LPVOID;
+        #[cfg(feature = "api_20_3")] {
+            arg = match num_via_dbc {
+                false => null_mut(),
+                true => 1 as LPVOID
+            };
+        }
+
+        #[cfg(not(feature = "api_20_3"))] {
+            arg = null_mut();
+        }
+
 
         let num_items = (get_raw_api!().get_item_count)(arg);
 
@@ -209,6 +250,7 @@ impl Volume {
     }
 
     //get number of items selected in directory browser context menu
+    #[cfg(feature = "api_20_3")]
     pub fn get_item_count_dbc(&self) -> Result<i32, XwfError> {
         self._get_item_count(true)
     }
@@ -352,9 +394,9 @@ impl Volume {
 
         let mut ret: Vec<i32> = Vec::new();
 
-        self.select()?;
+        let num_items = self.select()?;
 
-        for i in 0..self.get_item_count()? {
+        for i in 0..num_items {
             let item = Item::new(i);
 
             if pred(item)? == true {

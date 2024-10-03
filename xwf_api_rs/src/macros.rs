@@ -6,7 +6,6 @@ macro_rules! export_xt_init {
         #[allow(non_snake_case, unused_variables)]
         pub extern "C"  fn XT_Init(nVersion: DWORD, nFlags: DWORD, hMainWnd: HANDLE, lpReserved: PVOID) -> LONG {
 
-                    
             unsafe {
                 RAW_API = $crate::raw_api::RawApi::load().ok();
             }
@@ -15,21 +14,32 @@ macro_rules! export_xt_init {
                 $variable = Some(<$variable_type>::create());
             }
 
-            $crate::xwfinfo!("X-Tension {} Version {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION") );
-            
-            match option_env!("BUILD_DATE") {
-                Some(v) => $crate::xwfinfo!("Datum des Builds: {}", v),
-                _ => {}
-            };
-            
             $crate::xwfdebug!("XT_Init called");
+
+            let result_version_check = XtVersion::try_from(nVersion).and_then(|v| $crate::util::check_supported_xwf_version(v));
+
+            match result_version_check {
+                Ok(_) => { $crate::xwfinfo!("XWF API version check successful") },
+                Err(e) => {
+                    $crate::xwferror!("XWF API version check failed: {}", e);
+                    return XtInitReturn::PreventFurtherUseOfDll as i32;
+                }
+            }
+
+            let flags = XtInitFlags::from_bits_truncate(nFlags);
+
+
+            $crate::xwfinfo!("X-Tension {} Version {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION") );
+            $crate::xwfinfo!("powered by rust-lang binding xwf-api-rs (https://github.com/ThomasVogl/xwf-api-rs)");
+
+
             let res = $crate::get_lib_instance!($variable, $variable_type).xt_init(
                 XtVersion::try_from(nVersion).unwrap(),
-                XtInitFlags::from_bits_truncate(nFlags),
+                flags,
                 $crate::window::Window::new(hMainWnd), XtLicenseInfo {}
             );
 
-            
+
             match res {
                 Ok(ret) => ret as i32,
                 Err(e) => {

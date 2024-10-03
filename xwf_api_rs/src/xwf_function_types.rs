@@ -1,5 +1,5 @@
 use winapi::shared::minwindef::{BOOL, BYTE, DWORD, LPBOOL, LPLONG, LPVOID, PDWORD};
-use winapi::shared::ntdef::{LONGLONG, LONG, HANDLE, WCHAR, LPWCH, PVOID, PLONG, LPWSTR};
+use winapi::shared::ntdef::{LONG, HANDLE, WCHAR, LPWCH, PVOID, PLONG, LPWSTR};
 use winapi::ctypes::{__int64};
 
 type LPINT64 = *mut i64;
@@ -7,8 +7,6 @@ type LPINT64 = *mut i64;
 
 #[allow(non_snake_case, unused_variables)]
 pub type FnXwfOutputMessage = extern "stdcall" fn(lpMessage: *const WCHAR, nFlags: DWORD);
-#[allow(non_snake_case, unused_variables)]
-pub type FnXwfGetSize = extern "stdcall" fn(hVolumeOrItem: HANDLE, lpOptional: LPVOID) -> LONGLONG;
 
 #[allow(non_snake_case, unused_variables)]
 pub type FnXwfGetVolumeName = extern "stdcall" fn(
@@ -181,10 +179,18 @@ pub type FnXwfGetVsprop = extern "stdcall" fn(
 ) -> __int64;
 
 
+#[cfg(feature="api_20_9")]
 #[allow(non_snake_case, unused_variables)]
 pub type FnXwfSelectVolumeSnapshot = extern "stdcall" fn(
     hVolume: HANDLE,
 ) -> LONG;
+
+#[cfg(not(feature="api_20_9"))]
+#[allow(non_snake_case, unused_variables)]
+pub type FnXwfSelectVolumeSnapshot = extern "stdcall" fn(
+    hVolume: HANDLE,
+);
+
 
 #[allow(non_snake_case, unused_variables)]
 pub type FnXwfGetItemName = extern "stdcall" fn(

@@ -75,7 +75,7 @@ impl XTension for HelloWorldXTension {
         Application::hide_progress();
 
         //exit with negative return code as we just want to
-        return Ok(XtPrepareReturn::Negative(XtPrepareNegativeReturn::JustCallXtFinalize));
+        Ok(XtPrepareReturn::Negative(XtPrepareNegativeReturn::JustCallXtFinalize))
     }
 }
 

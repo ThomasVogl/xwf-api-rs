@@ -82,19 +82,19 @@ impl Into<i32> for XtFinalizeReturn {
 }
 
 impl TryFrom<u32> for XtVersion {
-    type Error = ();
+    type Error = XwfError;
 
     fn try_from(value: u32) -> Result<XtVersion, Self::Error> {
         if value == 0 {
-            return Err(());
+            return Err(XwfError::InvalidVersionNumber);
         }
         let version = ((value & 0xFFFF0000) >> 16) as u16;
         if version == 0 {
-            return Err(());
+            return Err(XwfError::InvalidVersionNumber);
         }
         Ok(XtVersion {
             major: (version / 100),
-            minor: (version % 100),
+            minor: (version % 100) / 10,
             service_release: ((value & 0x0000FF00) >> 8) as u8,
             language: ((value & 0x000000FF) >> 0) as u8,
         })

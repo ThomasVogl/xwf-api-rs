@@ -121,7 +121,19 @@ pub enum XwfItemInfoTypes {
     LastAccessTime          = 34,
     EntryModificationTime   = 35,
     DeletionTime            = 36,
-    InternalCreationTime    = 37
+    InternalCreationTime    = 37,
+    #[cfg(feature = "api_21_2")]
+    CreationTimeDisplayOfs          = 48,
+    #[cfg(feature = "api_21_2")]
+    ModificationTimeDisplayOfs      = 49,
+    #[cfg(feature = "api_21_2")]
+    LastAccessTimeDisplayOfs        = 50,
+    #[cfg(feature = "api_21_2")]
+    EntryModificationTimeDisplayOfs = 51,
+    #[cfg(feature = "api_21_2")]
+    DeletionTimeDisplayOfs          = 52,
+    #[cfg(feature = "api_21_2")]
+    InternalCreationTimeDisplayOfs  = 53,
 
 }
 
@@ -139,6 +151,7 @@ pub enum XtFinalizeReturn {
     Ok = 0
 }
 
+#[derive(Debug)]
 pub struct XtVersion {
     pub major: u16,
     pub minor: u16,
@@ -219,4 +232,22 @@ pub enum XwfDateTime {
     Utc(DateTime<Utc>),            //timestamp is given in UTC
     Local(DateTime<Local>),        //timestamp is given in local time zone
     NoTimezone(NaiveDateTime),     //timestamp has no timezone info
+}
+
+
+#[allow(dead_code)]
+pub enum VsPropType {
+    SpecialItemId = 10,
+    HashType1 =     20,
+    HashType2 =     21,
+    SetHashType1 =  25,
+    SetHashType2 =  26,
+    #[cfg(feature = "api_20_9")]
+    SetHasChanged =  30,
+}
+
+pub enum VolumeNameType {
+    SHORT =  3,
+    NORMAL = 2,
+    LONG =   1
 }

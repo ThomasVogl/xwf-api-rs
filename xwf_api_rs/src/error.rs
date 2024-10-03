@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::io;
+use crate::xwf_types::XtVersion;
 
 #[derive(Debug)]
 pub enum XwfError {
@@ -17,6 +18,8 @@ pub enum XwfError {
     NoEvidenceAvaible,
     OperationAbortedByUser,
     MaxItemIdExceeded,
+    InvalidVersionNumber,
+    IncompatibleXwfVersion(XtVersion, (u16, u16)),
     IoError(io::Error),
 }
 
@@ -37,6 +40,10 @@ impl Display for XwfError {
             XwfError::NoEvidenceAvaible => write!(f, "expected an evidence for processing"),
             XwfError::OperationAbortedByUser => write!(f, "current operation aborted by user"),
             XwfError::MaxItemIdExceeded => write!(f, "maximum ItemID exceeded (max of int32). This should never happen, but if it does anyway, it would probably lead to unexpected behaviour"),
+            XwfError::InvalidVersionNumber => write!(f, "invalid X-Ways Version Number detected"),
+            XwfError::IncompatibleXwfVersion(version, expected) => write!(f, "XWF Incompatibility detected. \
+            Current Version {}.{} SR-{}, minimal required version {}.{} \
+            Consider upgrading XWF or downgrading API level of xwf-api-rs (feature \"api_<major>_<minor>\")", version.major, version.minor, version.service_release,  expected.0, expected.1),
             XwfError::IoError(e) => write!(f, "io error occurred: {}", e),
         }
     }

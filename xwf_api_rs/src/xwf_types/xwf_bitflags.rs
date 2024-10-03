@@ -119,6 +119,7 @@ bitflags! {
         const AppendWithoutLineBreak    = 0x00000001; //append without line break (will be delimited from the previous message with a space instead)
         const DontLogToMsgLog           = 0x00000002; //don't log this error message in msglog.txt even if logging is active by default
         const IsAnsiString              = 0x00000004; //lpMessage points to an ANSI string, not a Unicode string (v16.5 and later)
+        #[cfg(feature = "api_20_6")]
         const LogToOutputWindow         = 0x00000008; //output the message in the Output window instead of the Messages window (v20.6 and later), where no [XT] prefix is inserted
         const OutputAsCaseLogEntry      = 0x00000010; //output the message as an entry in the case log,
                                                       // not in the Messages window (v19.4 and later), flag is ignored if no case is active, may be combined with the 0x4 flag
@@ -194,11 +195,13 @@ bitflags! {
         const DoNotOmit = 0x08;             //in case of XT_ACTION_RVS, to signal XWF that you wish to receive calls for XT_ProcessItem[Ex]()
                                             //even for files that the user wants to omit for any of the possible three reasons (v18.5 and later only)
 
-        const ProcessDirs = 0x10;           //in case of XT_ACTION_RVS, to signal XWF that you wish to receive calls for XT_ProcessItem[Ex]() even for directories, not only files,
+        const TargetDirs = 0x10;           //in case of XT_ACTION_RVS, to signal XWF that you wish to receive calls for XT_ProcessItem[Ex]() even for directories, not only files,
                                             //for example because you wish to parse the file system data structures in those directories (v18.5 and later only)
 
-        const ProcessZerorBytesFiles = 0x20;//in case of XT_ACTION_RVS, to signal XWF that you wish to receive calls for XT_ProcessItem[Ex]()
-                                            //even for files that have a size of 0 bytes, which are otherwise skipped for performance reasons (v18.9 SR-7 and later only)
+        const TargetZerorBytesFiles = 0x20;  //in case of XT_ACTION_RVS, to signal XWF that you wish to receive calls for XT_ProcessItem[Ex]()
+                                             //even for files that have a size of 0 bytes, which are otherwise skipped for performance reasons (v18.9 SR-7 and later only)
+        #[cfg(feature = "api_21_2")]
+        const TargetFilesWithUnknownData = 0x40; //in case of XT_ACTION_RVS, to signal XWF that you wish to receive calls for XT_ProcessItem[Ex]() even for files that of which only metadata are known, which are otherwise skipped for performance reasons (v21.2 SR-5 and later only)
         const _ = !0;
     }
 
