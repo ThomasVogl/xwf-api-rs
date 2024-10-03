@@ -21,9 +21,11 @@ Currently following examples exist (some more advanced examples will follow in f
 - **xt-helloworld-rs**
   - shows a minimum working example for a X-Tension
   - example for getting user inputs and showing progress bar
+  - shows how to define minimum required XWF API Version in cargo.toml
 - **xt-count-items-rs**
   - shows how to iterate over evidences and items
   - shows how to get some attributes of an item object
+  - shows how to define minimum required XWF API Version in cargo.toml
 
 ## Usage / Build Instructions
 documentation of this project is currently worked on and build / usage instructions will follow soon.
