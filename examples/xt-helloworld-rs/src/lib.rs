@@ -84,4 +84,4 @@ impl XTension for HelloWorldXTension {
 //second argument is the name of your XTension struct
 //also a similar export_all_functions_ex! macro available,
 //that defines the XT_ProcessItemEx() function instead of XT_ProcessItem()
-export_all_functions!(HELLO_WORLD_LIB, HelloWorldXTension);
+export_all_functions!(HELLO_WORLD_XTENSION, HelloWorldXTension);

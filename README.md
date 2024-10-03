@@ -17,20 +17,32 @@ for digital forensics workflows.
 In _example_ subdirectory reside some sample projects that 
 shall demonstrate basic usage of the xwf-api-rs library 
 and can be used as a boilerplate for new projects.
-Currently following examples exist (some more advanced examples will follow in future)
-- **xt-helloworld-rs**
+
+A quick guide how to use this library for developing own X-Tensions can be found [here](docs/quick_start.md).
+
+Currently following examples are existing:
+- [**xt-helloworld-rs**](examples/xt-helloworld-rs)
   - shows a minimum working example for a X-Tension
   - example for getting user inputs and showing progress bar
   - shows how to define minimum required XWF API Version in cargo.toml
-- **xt-count-items-rs**
+- [**xt-count-items-rs**](examples/xt-count-items-rs)
   - shows how to iterate over evidences and items
   - shows how to get some attributes of an item object
   - shows how to define minimum required XWF API Version in cargo.toml
 
-## Usage / Build Instructions
-documentation of this project is currently worked on and build / usage instructions will follow soon.
-Current state of the api may still be heavily changed during next weeks, 
-so it is not recommended yet to use this API productively.
+## Current state of development
+
+A detailed API documentation and some more advanced examples are still missing but will follow soon.
+
+Implementation is still very incomplete in respect to the translated features from the X-Tension C API. 
+So current functionality may not fit your needs yet.
+Furthermore the high-level rust API may still be heavily changed, so I do not recommend to use it productively
+unless you are not scared of extensive refactoring sessions.
+
+But besides that, the functionality that is currently implemented seems to work quite well already.
+You can easily interact with evidence-objects and their items,
+query its attributes such as name, timestamps, paths and parent items, file types/categories, metadata and much more.
+It is also possible already to read the binary data of an item.
 
 
 ## Project Goals
