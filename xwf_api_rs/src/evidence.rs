@@ -8,7 +8,7 @@ use crate::volume::Volume;
 use crate::error::XwfError;
 
 use crate::raw_api::RAW_API;
-use crate::xwf_types::{EvObjPropFlags, EvObjPropType};
+use crate::xwf_types::*;
 
 #[derive(Clone)]
 pub struct Evidence {

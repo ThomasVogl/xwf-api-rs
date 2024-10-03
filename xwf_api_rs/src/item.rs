@@ -19,7 +19,6 @@ use crate::traits::NativeHandle;
 use crate::raw_api::RAW_API;
 use crate::volume::{HashType, Volume};
 use crate::xwf_types::*;
-
 use regex::Regex;
 use winsafe::WString;
 use crate::application::Application;

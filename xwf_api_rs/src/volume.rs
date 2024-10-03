@@ -7,7 +7,7 @@ use crate::get_raw_api;
 
 use crate::error::XwfError;
 use crate::item::Item;
-use crate::xwf_types::{ItemInfoFlags, PropType};
+use crate::xwf_types::*;
 use crate::raw_api::RAW_API;
 
 #[allow(dead_code)]
@@ -97,12 +97,12 @@ impl HashType {
 }
 
 pub struct ItemIterator {
-    idx: u32,
-    max: u32
+    idx: i32,
+    max: i32
 }
 
 impl ItemIterator {
-    pub fn create(min:u32, max: u32) -> Self {
+    pub fn create(min:i32, max: i32) -> Self {
         Self {
             idx: min,
             max: max
@@ -114,7 +114,7 @@ impl Iterator for ItemIterator {
     type Item = Item;
     fn next(&mut self) -> Option<Self::Item> {
         if self.idx < self.max {
-            let i = self.idx as i32;
+            let i = self.idx;
             self.idx+=1;
             Some(Item::new(i))
         } else {
@@ -182,12 +182,35 @@ impl Volume {
         }
     }
 
-    pub fn get_item_count(&self) -> u32 {
-        (get_raw_api!().get_item_count)(null_mut())
+    fn _get_item_count(&self, num_via_dbc: bool) -> Result<i32, XwfError> {
+        let arg: LPVOID = match num_via_dbc {
+            false => null_mut(),
+            true => 1 as LPVOID
+        };
+
+        let num_items = (get_raw_api!().get_item_count)(arg);
+
+        // check if number of items exceeds max value of int32 and if it does, raise an error.
+        // nItemID is handled as a LONG value (signed integer) in X-Tension C API,
+        // so a cast in this case from u32 to i32 would lead to negative nItemIDs.
+        // From my understanding, nItemIDs are always positive values,
+        // so a negative value probably would lead to unexpected behavior...
+        if num_items > i32::MAX as u32 {
+            Err(XwfError::MaxItemIdExceeded)
+        } else {
+            Ok(num_items as i32)
+        }
+
+
     }
 
-    pub fn get_item_count_dbc(&self) -> u32 {
-        (get_raw_api!().get_item_count)(1 as LPVOID)
+    pub fn get_item_count(&self) -> Result<i32, XwfError> {
+        self._get_item_count(false)
+    }
+
+    //get number of items selected in directory browser context menu
+    pub fn get_item_count_dbc(&self) -> Result<i32, XwfError> {
+        self._get_item_count(true)
     }
 
     pub fn get_prop(&self, prop_type: PropType) -> i64 {
@@ -205,12 +228,12 @@ impl Volume {
 
     pub fn iter_mut(&mut self) -> Result<ItemIterator, XwfError> {
         self.select()?;
-        Ok(ItemIterator::create(0, self.get_item_count()))
+        Ok(ItemIterator::create(0, self.get_item_count()?))
     }
 
     pub fn iter(&self) -> Result<ItemIterator, XwfError> {
         self.select()?;
-        Ok(ItemIterator::create(0, self.get_item_count()))
+        Ok(ItemIterator::create(0, self.get_item_count()?))
     }
 
     pub fn get_parent_dirs(&self, items: &Vec<u32>) -> HashSet<u32> {
@@ -278,7 +301,7 @@ impl Volume {
             return Ok(ret);
         }
 
-        let it = ItemIterator::create(parent_item.item_id as u32, self.get_item_count());
+        let it = ItemIterator::create(parent_item.item_id, self.get_item_count()?);
         
         it
         .filter(|i| pred(i))
@@ -322,17 +345,17 @@ impl Volume {
     }
 
 
-    pub fn get_items_with_pred<F>(&self, mut pred: F) -> Result<Vec<u32>, XwfError>
+    pub fn get_items_with_pred<F>(&self, mut pred: F) -> Result<Vec<i32>, XwfError>
         where
             F: FnMut(Item) -> Result<bool, XwfError>
     {
 
-        let mut ret: Vec<u32> = Vec::new();
+        let mut ret: Vec<i32> = Vec::new();
 
         self.select()?;
 
-        for i in 0..self.get_item_count() {
-            let item = Item::new(i as i32);
+        for i in 0..self.get_item_count()? {
+            let item = Item::new(i);
 
             if pred(item)? == true {
                 ret.push(i);

@@ -16,6 +16,7 @@ pub enum XwfError {
     GivenBufferToSmallForContent,
     NoEvidenceAvaible,
     OperationAbortedByUser,
+    MaxItemIdExceeded,
     IoError(io::Error),
 }
 
@@ -35,6 +36,7 @@ impl Display for XwfError {
             XwfError::GivenBufferToSmallForContent => write!(f, "given buffer to XWF was to small for the content"),
             XwfError::NoEvidenceAvaible => write!(f, "expected an evidence for processing"),
             XwfError::OperationAbortedByUser => write!(f, "current operation aborted by user"),
+            XwfError::MaxItemIdExceeded => write!(f, "maximum ItemID exceeded (max of int32). This should never happen, but if it does anyway, it would probably lead to unexpected behaviour"),
             XwfError::IoError(e) => write!(f, "io error occurred: {}", e),
         }
     }

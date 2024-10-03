@@ -1,7 +1,7 @@
 use std::ptr::null_mut;
 use winapi::shared::ntdef::LPWSTR;
 use crate::get_raw_api;
-use crate::xwf_types::{OutputMessageFlags, ProgressFlags};
+use crate::xwf_types::*;
 use crate::raw_api::RAW_API;
 
 use crate::error::XwfError;

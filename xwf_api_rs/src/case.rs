@@ -11,7 +11,7 @@ use crate::get_raw_api;
 use crate::evidence::{Evidence, EvidenceIterator};
 use crate::item::Item;
 use crate::error::XwfError;
-use crate::xwf_types::{ProgressFlags, ReportTableFlags};
+use crate::xwf_types::*;
 use crate::raw_api::RAW_API;
 
 
@@ -99,11 +99,11 @@ impl Case {
             vol.select()?;
 
             // get number of elements within volume
-            let num_items = vol.get_item_count();
+            let num_items = vol.get_item_count()?;
 
             // set progress description
             Application::set_progress_description(format!("processing evidence \"{}\"", ev.get_name()?));
-            Application::set_progress_percentage(0, num_items);
+            Application::set_progress_percentage(0, num_items as u32);
 
 
             // iterate over all items (number == item id)
@@ -112,7 +112,7 @@ impl Case {
 
                 let item = Item::new(item_id as i32);
                 ret.push(item_consumer(self, &ev, &item)?);
-                Application::set_progress_percentage(item_id+1, num_items);
+                Application::set_progress_percentage((item_id+1) as u32, num_items as u32);
             }
         }
 
@@ -134,11 +134,11 @@ impl Case {
             vol.select()?;
 
             // get number of elements within volume
-            let num_items = vol.get_item_count();
+            let num_items = vol.get_item_count()?;
 
             // set progress description
             Application::set_progress_description(format!("processing evidence \"{}\"", ev.get_name()?));
-            Application::set_progress_percentage(0, num_items);
+            Application::set_progress_percentage(0, num_items as u32);
 
 
             // iterate over all items (number == item id)
@@ -146,7 +146,7 @@ impl Case {
                 Application::should_stop()?;
 
                 ret.push(item_consumer(Item::new(item_id as i32))?);
-                Application::set_progress_percentage(item_id+1, num_items);
+                Application::set_progress_percentage((item_id+1) as u32, num_items as u32);
             }
         }
 
