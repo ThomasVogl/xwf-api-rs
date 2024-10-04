@@ -231,7 +231,7 @@ impl Item {
         }
     }
 
-    pub fn set_hash_value(&self, hash_value: &Vec<u8>, set_secondary: bool) -> Result<(), ()>{
+    pub fn set_hash_value(&self, hash_value: &Vec<u8>, set_secondary: bool) -> Result<(), XwfError>{
         let mut param: u32 = 1;
 
         if set_secondary {
@@ -243,7 +243,7 @@ impl Item {
         if x != 0 {
             Ok(())
         } else {
-            Err(())
+            Err(XwfError::XwfFunctionCallFailed("set_hash_value"))
         }
     }
 
