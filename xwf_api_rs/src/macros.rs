@@ -43,7 +43,7 @@ macro_rules! export_xt_init {
             match res {
                 Ok(ret) => ret as i32,
                 Err(e) => {
-                    $crate::xwferror!("{}", e);
+                    $crate::xwferror!("XT_Init error: {}", e);
                     XtInitReturn::PreventFurtherUseOfDll as i32
                 }
             }
@@ -68,7 +68,11 @@ macro_rules! export_xt_done {
         pub extern "C" fn XT_Done(lpReserved: PVOID)
             -> LONG {
             $crate::xwfdebug!("XT_Done called");
-            $crate::get_lib_instance!($variable, $variable_type).xt_done();
+            let res = $crate::get_lib_instance!($variable, $variable_type).xt_done();
+
+            if res.is_err() {
+                $crate::xwferror!("XT_Done error: {}", res.err().unwrap());
+            }
 
             //uninitalize raw api
             unsafe {
@@ -87,8 +91,17 @@ macro_rules! export_xt_about {
         pub extern "C" fn XT_About(hParentWnd: HANDLE, lpReserved: PVOID)
             -> LONG {
             $crate::xwfdebug!("XT_About called");
-            $crate::get_lib_instance!($variable, $variable_type).xt_about($crate::window::Window::new(hParentWnd));
-            0
+            let res = $crate::get_lib_instance!($variable, $variable_type).xt_about($crate::window::Window::new(hParentWnd));
+            match res {
+                Ok(_) => {
+                     0
+                },
+                Err(e) => {
+                    $crate::xwferror!("XT_About error: {}", e);
+                    0
+                }
+            }
+
         }
     };
 }
@@ -115,7 +128,7 @@ macro_rules! export_xt_prepare {
             match res {
                 Ok(ret) => ret.into(),
                 Err(e) => {
-                    $crate::xwfwarn!("{}", e);
+                    $crate::xwferror!("XT_Prepare error: {}", e);
                     XtPrepareNegativeReturn::JustCallXtFinalize.into()
                 }
             }
@@ -145,7 +158,7 @@ macro_rules! export_xt_finalize {
             match res {
                 Ok(ret) => ret.into(),
                 Err(e) => {
-                    $crate::xwfwarn!("{}", e);
+                    $crate::xwferror!("XT_Finalize error: {}", e);
                     XtPrepareNegativeReturn::JustCallXtFinalize.into()
                 }
             }
@@ -167,7 +180,7 @@ macro_rules! export_xt_process_item {
                      ret.into() 
                 },
                 Err(e) => {
-                    $crate::xwfwarn!("{}", e);
+                    $crate::xwferror!("XT_ProcessItem error:{}", e);
                     XtProcessItemReturn::Ok.into()
                 }
             }
@@ -191,7 +204,7 @@ macro_rules! export_xt_process_item_ex {
             match res {
                 Ok(ret) => ret.into(),
                 Err(e) => {
-                    $crate::xwfwarn!("{}", e);
+                    $crate::xwferror!("XT_ProcessItemEx error: {}", e);
                     XtProcessItemExReturn::Ok.into()
                 }
             }

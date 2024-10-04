@@ -20,10 +20,11 @@ pub trait XTension {
         Ok(XtInitReturn::RunSingleThreaded)
     }
 
-    fn xt_done(&mut self) {
+    fn xt_done(&mut self) -> Result<(), Self::XTensionError> {
+        Ok(())
     }
-    fn xt_about(&mut self, _: Option<Window>) {
-
+    fn xt_about(&mut self, _: Option<Window>) -> Result<(), Self::XTensionError> {
+        Ok(())
     }
     fn xt_prepare(&mut self, _volume: Option<Volume>, _evidence: Option<Evidence>, _op_type: XtPrepareOpType) -> Result<XtPrepareReturn, Self::XTensionError> {
         Ok(XtPrepareReturn::Positive(XtPreparePositiveReturnFlags::CallProcessItemLate))
