@@ -1,0 +1,13 @@
+[package]
+name = "xt-process-data-rs"
+version = "0.0.1"
+edition = "2021"
+
+
+[lib]
+crate-type = ["cdylib"]
+
+
+
+[dependencies]
+xwf-api-rs = { version = "1.0.0", git = "https://github.com/ThomasVogl/xwf-api-rs.git", tag = "1.0.0-pre.1", features = [ "api_20_6"] }

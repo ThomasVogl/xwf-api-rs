@@ -5,6 +5,7 @@
       <sourceFolder url="file://$MODULE_DIR$/examples/xt-count-items-rs/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/examples/xt-helloworld-rs/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/xwf_api_rs/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/examples/xt-process-data-rs/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/examples/xt-helloworld-rs/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
       <excludeFolder url="file://$MODULE_DIR$/xwf_api_rs/target" />

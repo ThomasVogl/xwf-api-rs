@@ -20,11 +20,12 @@ use crate::raw_api::RAW_API;
 use crate::volume::{HashType, Volume};
 use crate::xwf_types::*;
 use regex::Regex;
+use winapi::ctypes::__int64;
 use winsafe::WString;
 use crate::application::Application;
 use crate::util::char_ptr_to_string;
 
-const CHUNK_SIZE: i64 = 65536;
+const DEFAULT_DATA_CHUNK_SIZE: usize = 1*1024*1024;
 const BUF_SIZE_REPORT_TABLE_QUERY: usize = 8192;
 const BUF_SIZE_REPORT_HASHSET_QUERY: usize = 4096;
 
@@ -133,8 +134,27 @@ impl TryFrom<String> for UniqueItemId {
             evidence_id: evidence_id as u32,
             short_ev_id: evidence_id }
         )
+    }
+}
 
+impl Into<i64> for UniqueItemId {
+    fn into(self) -> i64 {
+        let mut ret = self.item_id as i64;
+        ret |= (self.evidence_id as i64) << 32;
+        ret
+    }
+}
 
+impl From<i64> for UniqueItemId {
+    fn from(id: i64) -> Self {
+        let evidence_id = (id >> 32) as u32;
+        let item_id = (id & 0xffffffff) as i32;
+
+        UniqueItemId {
+            item_id,
+            evidence_id,
+            short_ev_id: 0,
+        }
     }
 }
 
@@ -273,11 +293,9 @@ impl Item {
 
 
     pub fn create_file(&self, name: &String, creation_flags: FileCreationFlags, src_info: &mut SrcInfo) -> Result<Item, XwfError> {
-
-        let wstr = winsafe::WString::from_str(name);
+        let wstr = WString::from_str(name);
 
         let p_src_info: *mut SrcInfo = src_info;
-
 
         let result = (get_raw_api!().create_file)(wstr.as_ptr() as LPWSTR, creation_flags.bits(), self.item_id, p_src_info as PVOID);
 
@@ -395,8 +413,8 @@ impl Item {
         "\\".to_string() + &path_components.join("\\")
     }
 
-    pub fn add_to_report_table(&self, name: &String, flags: AddReportTableFlags) {
-        let wchar_c_str = winsafe::WString::from_str(name);
+    pub fn add_to_report_table<S: AsRef<str>>(&self, name: S, flags: AddReportTableFlags) {
+        let wchar_c_str = WString::from_str(name);
         (get_raw_api!().add_to_report_table)(self.item_id, wchar_c_str.as_ptr() as LPWSTR, flags.bits());
     }
 
@@ -666,82 +684,48 @@ impl ItemHandle {
 
     pub fn read(&self) -> Result<Vec<u8>, XwfError>{
         let size = self.get_logical_size()?;
-
-        let mut num_bytes_to_read = size;
-
-
+        if size <= 0 {
+            return Err(XwfError::InvalidItemSize);
+        }
         let mut ret: Vec<u8> = Vec::with_capacity(size as usize);
-        ret.resize(size as usize, 0u8);
 
-        while num_bytes_to_read  > 0 {
-
+        while let Some(mut data) = self.read_chunk(ret.len(), DEFAULT_DATA_CHUNK_SIZE as usize) {
             Application::should_stop()?;
-
-            let bytes_read = size-num_bytes_to_read;
-            
-
-            let mut chunk_size = CHUNK_SIZE;
-
-            if chunk_size > num_bytes_to_read {
-                chunk_size = num_bytes_to_read;
-            }
-            let buf_ptr;
-            unsafe {
-                buf_ptr = ret.as_mut_ptr().add((size-num_bytes_to_read) as usize);
-            }
-
-            let r = (get_raw_api!().read)(self.item_handle, bytes_read, buf_ptr, chunk_size as DWORD);
-
-            if r<= 0 {
-                return Err(XwfError::ReadItemDataFailed);
-            }
-
-            num_bytes_to_read-=r as i64;
+            ret.append(&mut data);
         }
 
-        Ok(ret)
+        if ret.len() == 0 {
+            Err(XwfError::ReadItemDataFailed)
+        } else {
+            Ok(ret)
+        }
+    }
+
+    pub fn read_chunk(&self, offset: usize, chunk_size: usize ) -> Option<Vec<u8>> {
+        let mut byte_buf: Vec<u8> = vec![0; chunk_size];
+        let r = (get_raw_api!().read)(self.item_handle, offset as __int64, byte_buf.as_mut_ptr(), chunk_size as DWORD);
+
+        if r<= 0 {
+            None
+        } else if r != chunk_size as DWORD {
+            byte_buf.truncate(r as usize);
+            Some(byte_buf)
+        } else {
+            Some(byte_buf)
+        }
+
     }
 
 
-    pub fn write_to_file(&self, dest: &Path) -> Result<(), XwfError>{
+    pub fn write_to_file<P: AsRef<Path>>(&self, dest: P) -> Result<(), XwfError>{
 
         let mut file = File::create(dest).map_err(|e| XwfError::IoError(e) )?;
 
-        let size = self.get_logical_size()?;
+        let mut current_offset = 0usize;
 
-        let mut num_bytes_to_read = size;
-
-
-        while num_bytes_to_read  > 0 {
-
-            Application::should_stop()?;
-
-            let bytes_read = size-num_bytes_to_read;
-
-            let mut chunk_size = CHUNK_SIZE;
-
-            if chunk_size > num_bytes_to_read {
-                chunk_size = num_bytes_to_read;
-            }
-
-            let mut buf: Vec<u8> = Vec::new();
-            buf.resize(CHUNK_SIZE as usize, 0);
-
-
-            let r = (get_raw_api!().read)(self.item_handle, bytes_read, buf.as_mut_ptr(), chunk_size as DWORD);
-
-            if r<= 0 {
-                return Err(XwfError::ReadItemDataFailed);
-            }
-
-            if r != CHUNK_SIZE as u32 {
-                buf.resize(r as usize, 0);
-            }
-
-            file.write_all(buf.as_slice()).map_err(|e| XwfError::IoError(e))?;
-
-
-            num_bytes_to_read-=r as i64;
+        while let Some(data) = self.read_chunk(current_offset, DEFAULT_DATA_CHUNK_SIZE as usize) {
+            current_offset+=data.len();
+            file.write_all(&data.as_slice()).map_err(|e| XwfError::IoError(e))?;
         }
 
         Ok(())

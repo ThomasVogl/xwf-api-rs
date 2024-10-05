@@ -4,6 +4,7 @@ members = [
     "xwf_api_rs",
     "examples/xt-helloworld-rs",
     "examples/xt-count-items-rs",
+    "examples/xt-process-data-rs"
 ]
 
 

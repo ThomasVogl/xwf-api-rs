@@ -7,6 +7,12 @@ use crate::raw_api::RAW_API;
 use crate::error::XwfError;
 
 
+#[cfg(feature="api_20_6")]
+pub const DEFAULT_OUTPUT_FLAGS: OutputMessageFlags = OutputMessageFlags::LogToOutputWindow;
+#[cfg(not(feature="api_20_6"))]
+pub const DEFAULT_OUTPUT_FLAGS: OutputMessageFlags = OutputMessageFlags::empty();
+
+
 pub struct Application {
 
 }
@@ -88,7 +94,12 @@ macro_rules! xwfinfo {
     ($($arg:tt)*) => {{
         let res = std::fmt::format(format_args!($($arg)*));
         
-        $crate::application::Application::output_string(format!("{} [INFO]: {}", $crate::chrono::offset::Local::now().format("%H:%M:%S"), res), $crate::xwf_types::OutputMessageFlags::empty())
+        $crate::application::Application::output_string(
+            format!("{} [INFO][{}]: {}",
+                $crate::chrono::offset::Local::now().format("%H:%M:%S"),
+                env!("CARGO_PKG_NAME"),
+                res),
+            $crate::application::DEFAULT_OUTPUT_FLAGS)
     }}
 }
 
@@ -98,7 +109,12 @@ macro_rules! xwfwarn {
     ($($arg:tt)*) => {{
         let res = std::fmt::format(format_args!($($arg)*));
         
-        $crate::application::Application::output_string(format!("{} [WARN]: {}", $crate::chrono::offset::Local::now().format("%H:%M:%S"), res), $crate::xwf_types::OutputMessageFlags::empty())
+        $crate::application::Application::output_string(
+            format!("{} [WARN][{}]: {}",
+                $crate::chrono::offset::Local::now().format("%H:%M:%S"),
+                env!("CARGO_PKG_NAME"),
+                res),
+            $crate::application::DEFAULT_OUTPUT_FLAGS)
     }}
 }
 
@@ -108,7 +124,12 @@ macro_rules! xwferror {
     ($($arg:tt)*) => {{
         let res = std::fmt::format(format_args!($($arg)*));
         
-        $crate::application::Application::output_string(format!("{} [ERROR]: {}", $crate::chrono::offset::Local::now().format("%H:%M:%S"), res), $crate::xwf_types::OutputMessageFlags::empty())
+        $crate::application::Application::output_string(
+            format!("{} [ERROR][{}]: {}",
+                    $crate::chrono::offset::Local::now().format("%H:%M:%S"),
+                    env!("CARGO_PKG_NAME"),
+                    res),
+                $crate::application::DEFAULT_OUTPUT_FLAGS)
     }}
 }
 
@@ -120,7 +141,12 @@ macro_rules! xwfdebug {
     ($($arg:tt)*) => {{
         let res = std::fmt::format(format_args!($($arg)*));
         
-        $crate::application::Application::output_string(format!("{} [DEBUG]: {}", $crate::chrono::offset::Local::now().format("%H:%M:%S"), res), $crate::xwf_types::OutputMessageFlags::empty())
+        $crate::application::Application::output_string(
+            format!("{} [DEBUG][{}]: {}",
+                $crate::chrono::offset::Local::now().format("%H:%M:%S"),
+                env!("CARGO_PKG_NAME"),
+                res),
+            $crate::application::DEFAULT_OUTPUT_FLAGS)
     }}
 }
 

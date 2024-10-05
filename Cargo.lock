@@ -532,6 +532,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "xt-process-data-rs"
+version = "0.0.1"
+dependencies = [
+ "xwf-api-rs",
+]
+
+[[package]]
 name = "xwf-api-rs"
 version = "1.0.0"
 dependencies = [

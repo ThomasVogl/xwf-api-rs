@@ -29,6 +29,12 @@ Currently following examples are existing:
   - shows how to iterate over evidences and items
   - shows how to get some attributes of an item object
   - shows how to define minimum required XWF API Version in cargo.toml
+- [**xt-process-data-rs**](examples/xt-process-data-rs)
+  - shows how to use xt_process_item_ex() for calling X-Tensions via _Volume Snapshot Refinement_
+  - shows how to get some data portions of an item
+  - shows how to get case information and computing a unique id for items
+  - shows how to export item data to any location
+  
 
 ## Current state of development
 

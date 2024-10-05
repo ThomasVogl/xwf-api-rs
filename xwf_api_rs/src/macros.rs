@@ -19,9 +19,9 @@ macro_rules! export_xt_init {
             let result_version_check = XtVersion::try_from(nVersion).and_then(|v| $crate::util::check_supported_xwf_version(v));
 
             match result_version_check {
-                Ok(_) => { $crate::xwfinfo!("XWF API version check successful") },
+                Ok(_) => { $crate::xwfinfo!("X-Tension API version check successful") },
                 Err(e) => {
-                    $crate::xwferror!("XWF API version check failed: {}", e);
+                    $crate::xwferror!("X-Tension API version check failed: {}", e);
                     return XtInitReturn::PreventFurtherUseOfDll as i32;
                 }
             }
@@ -29,7 +29,7 @@ macro_rules! export_xt_init {
             let flags = XtInitFlags::from_bits_truncate(nFlags);
 
 
-            $crate::xwfinfo!("X-Tension {} Version {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION") );
+            $crate::xwfinfo!("X-Tension \"{}\" Version {} started", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION") );
             $crate::xwfinfo!("powered by rust-lang binding xwf-api-rs (https://github.com/ThomasVogl/xwf-api-rs)");
 
 
@@ -43,7 +43,7 @@ macro_rules! export_xt_init {
             match res {
                 Ok(ret) => ret as i32,
                 Err(e) => {
-                    $crate::xwferror!("XT_Init error: {}", e);
+                    $crate::xwferror!("XT_Init: {}", e);
                     XtInitReturn::PreventFurtherUseOfDll as i32
                 }
             }
@@ -71,8 +71,10 @@ macro_rules! export_xt_done {
             let res = $crate::get_lib_instance!($variable, $variable_type).xt_done();
 
             if res.is_err() {
-                $crate::xwferror!("XT_Done error: {}", res.err().unwrap());
+                $crate::xwferror!("XT_Done: {}", res.err().unwrap());
             }
+
+            $crate::xwfinfo!("X-Tension finished.");
 
             //uninitalize raw api
             unsafe {
@@ -97,7 +99,7 @@ macro_rules! export_xt_about {
                      0
                 },
                 Err(e) => {
-                    $crate::xwferror!("XT_About error: {}", e);
+                    $crate::xwferror!("XT_About: {}", e);
                     0
                 }
             }
@@ -128,7 +130,7 @@ macro_rules! export_xt_prepare {
             match res {
                 Ok(ret) => ret.into(),
                 Err(e) => {
-                    $crate::xwferror!("XT_Prepare error: {}", e);
+                    $crate::xwferror!("XT_Prepare: {}", e);
                     XtPrepareNegativeReturn::JustCallXtFinalize.into()
                 }
             }
@@ -158,7 +160,7 @@ macro_rules! export_xt_finalize {
             match res {
                 Ok(ret) => ret.into(),
                 Err(e) => {
-                    $crate::xwferror!("XT_Finalize error: {}", e);
+                    $crate::xwferror!("XT_Finalize: {}", e);
                     XtPrepareNegativeReturn::JustCallXtFinalize.into()
                 }
             }
@@ -180,8 +182,10 @@ macro_rules! export_xt_process_item {
                      ret.into() 
                 },
                 Err(e) => {
-                    $crate::xwferror!("XT_ProcessItem error:{}", e);
-                    XtProcessItemReturn::Ok.into()
+                    $crate::xwferror!("XT_ProcessItem: error occurred in processing item id {}", nItemID);
+                    $crate::xwferror!("XT_ProcessItem: {}", e);
+                    $crate::xwferror!("XT_ProcessItem: stopping operation due to previous error");
+                    XtProcessItemReturn::StopCurrentOperation.into()
                 }
             }
         }
@@ -196,6 +200,7 @@ macro_rules! export_xt_process_item_ex {
             let res_item = $crate::item::ItemHandle::new(hItem, $crate::item::Item::new(nItemID));
             if res_item.is_err() {
                 $crate::xwferror!("failed to parse hItem Argument");
+                $crate::xwferror!("XT_ProcessItemEx: stopping operation due to previous error");
                 return XtProcessItemExReturn::StopCurrentOperation.into();
             }
 
@@ -204,8 +209,11 @@ macro_rules! export_xt_process_item_ex {
             match res {
                 Ok(ret) => ret.into(),
                 Err(e) => {
-                    $crate::xwferror!("XT_ProcessItemEx error: {}", e);
-                    XtProcessItemExReturn::Ok.into()
+                    $crate::xwferror!("XT_ProcessItemEx: error occurred in processing item id {}", nItemID);
+                    $crate::xwferror!("XT_ProcessItemEx: {}", e);
+                    $crate::xwferror!("XT_ProcessItemEx: stopping operation due to previous error");
+                    XtProcessItemExReturn::StopCurrentOperation.into()
+
                 }
             }
         }
