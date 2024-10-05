@@ -74,16 +74,29 @@ impl XTension for ProcessDataXtension {
     }
 
     fn xt_process_item_ex(&mut self, handle: ItemHandle) -> Result<XtProcessItemExReturn, Self::XTensionError> {
+        // check if current_evidence and current_output_path were set by xt_prepare
+        // this should always be the case, but just to be sure...
         if let Some(ev) = self.current_evidence.as_ref() {
             if let Some(output_path) = self.current_output_path.as_ref() {
 
+                //get item object from handle
                 let item = handle.item();
+
+                // get unique id from items
+                // unique id contains also evidence id to be able to uniquely identify item across evidences
                 let item_uid = item.unique_id(ev);
+
+                // get file type
                 let file_type = item.get_item_type(false)?;
 
+                // get first bytes of file to check if contains a JPG header
                 if let Some(header) = handle.read_chunk(0, JPG_HEADER.len()) {
                     if header.eq(&JPG_HEADER) {
-                        handle.write_to_file(output_path.join(item_uid.to_string() + "." + &file_type))?
+                        // construct destination path by unique id and item type
+                        let output_file = output_path.join(item_uid.to_string() + "." + &file_type);
+
+                        // write item data to output file
+                        handle.write_to_file(output_file)?
                     }
                 }
             }
