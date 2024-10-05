@@ -66,7 +66,7 @@ impl XTension for ProcessDataXtension {
             return Ok(XtPrepareReturn::Negative(XtPrepareNegativeReturn::JustCallXtFinalize));
         }
 
-        //exit with negative return code as we just want to
+        //exit with positive return code and signalize that we want XT_ProcessItem(Ex) to be called
         Ok(XtPrepareReturn::Positive(
             XtPreparePositiveReturnFlags::CallProcessItem
                 .union(XtPreparePositiveReturnFlags::CallProcessItemLate)
