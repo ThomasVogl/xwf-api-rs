@@ -76,12 +76,20 @@ impl Hash for Item {
 }
 
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Debug, Hash)]
 pub struct UniqueItemId {
     pub item_id: i32,
     pub evidence_id: u32,
     pub short_ev_id: u16,
 }
+
+impl PartialEq for UniqueItemId {
+    fn eq(&self, other: &Self) -> bool {
+        self.item_id == other.item_id && self.evidence_id == other.evidence_id
+    }
+}
+
+impl Eq for UniqueItemId {}
 
 impl PartialOrd for UniqueItemId {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
