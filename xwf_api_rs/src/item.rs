@@ -224,7 +224,7 @@ impl Item {
             flags.bits());
 
         if handle == null_mut() {
-            return Err(XwfError::FailedToGetObjectHandle);
+            return Err(XwfError::FailedToGetItemHandle(self.item_id));
         }
 
         ItemHandle::new(handle, *self)
