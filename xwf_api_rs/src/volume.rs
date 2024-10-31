@@ -215,14 +215,9 @@ impl Volume {
     }
 
     #[cfg(feature = "api_20_9")]
-    pub fn has_changed(&self) -> Result<(), XwfError> {
+    pub fn has_changed(&self){
         let mut data = [0xFF];
-        let ret: i64 = (get_raw_api!().get_vs_prop)(VsPropType::SetHasChanged as LONG, data.as_mut_ptr() as PVOID);
-        if ret < 0 {
-            Err(XwfError::XwfFunctionCallFailed("has_changed"))
-        } else {
-            Ok(())
-        }
+        let _ = (get_raw_api!().get_vs_prop)(VsPropType::SetHasChanged as LONG, data.as_mut_ptr() as PVOID);
     }
 
     #[allow(unused_variables)]
