@@ -2,7 +2,7 @@ use bitflags::bitflags;
 use serde::{Deserialize, Serialize};
 
 bitflags! {
-    #[derive(Serialize, Debug, PartialEq, Eq, Clone, Copy)]
+    #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy)]
     pub struct ItemInfoFlags: u64 {
         const IsDirectory                           = 0x00000001;
         const HasChildObjects                       = 0x00000002;

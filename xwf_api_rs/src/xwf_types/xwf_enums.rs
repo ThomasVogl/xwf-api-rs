@@ -1,5 +1,5 @@
 use chrono::{DateTime, Local, NaiveDateTime, Utc};
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 use crate::xwf_types::XtPreparePositiveReturnFlags;
 
 pub enum XtPrepareNegativeReturn {
@@ -43,7 +43,7 @@ pub enum PropType {
 }
 
 
-#[derive(Debug, PartialEq, Eq, Serialize, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone, Copy)]
 pub enum ItemInfoClassification {
     NormalFile                            = 0x00, //normal file
     HfsResourceFork                       = 0x04, //HFS resource fork
@@ -159,7 +159,7 @@ pub struct XtVersion {
     pub language: u8,
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone, Copy)]
 pub enum FileFormatConsistency {
     Unknown = 0,
     Ok = 1,
@@ -167,7 +167,7 @@ pub enum FileFormatConsistency {
     NotDocumented = 3,
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone, Copy)]
 pub enum ItemInfoDeletion {
     Existing                    = 0,   //existing
     PossiblyReverable           = 1,   //previously existing, possibly recoverable
@@ -177,7 +177,7 @@ pub enum ItemInfoDeletion {
     CarvedFile                  = 5    //carved file (since v19.3 SR-3, used to be 1)
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone, Copy)]
 pub enum FileTypeStatus {
     NotVerified = 0,
     TooSmall = 1,
@@ -227,7 +227,7 @@ pub enum FileTypeCategory {
     Other,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum XwfDateTime {
     Utc(DateTime<Utc>),            //timestamp is given in UTC
     Local(DateTime<Local>),        //timestamp is given in local time zone
