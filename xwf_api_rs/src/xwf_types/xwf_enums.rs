@@ -188,7 +188,7 @@ pub enum FileTypeStatus {
     MismatchDetected=6,
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone, Copy)]
 pub enum FileTypeCategory {
     Picture,
     Word,
