@@ -227,7 +227,7 @@ impl Item {
             return Err(XwfError::FailedToGetItemHandle(self.item_id));
         }
 
-        ItemHandle::new(handle, *self)
+        ItemHandle::new(handle, *self, true)
     }
 
 
@@ -596,7 +596,8 @@ impl Item {
 #[derive(Debug)]
 pub struct ItemHandle {
     item_handle: HANDLE,
-    item: Item
+    item: Item,
+    shall_close: bool,
 }
 
 impl NativeHandle for ItemHandle {
@@ -608,7 +609,7 @@ impl NativeHandle for ItemHandle {
 
 impl ItemHandle {
 
-    pub fn new(item_handle: HANDLE, item: Item) -> Result<ItemHandle, XwfError> {
+    pub fn new(item_handle: HANDLE, item: Item, shall_close: bool) -> Result<ItemHandle, XwfError> {
 
         if item_handle == null_mut() {
             return Err(XwfError::InputHandleIsNull);
@@ -616,7 +617,8 @@ impl ItemHandle {
 
         Ok(ItemHandle {
             item_handle,
-            item
+            item,
+            shall_close
         })
     }
     pub fn handle(&self) -> HANDLE {
@@ -738,8 +740,15 @@ impl ItemHandle {
 
         Ok(())
     }
+}
 
+impl Drop for ItemHandle{
+    fn drop(&mut self) {
+        if self.shall_close {
+            (get_raw_api!().close)(self.item_handle)
+        }
 
+    }
 }
 
 unsafe impl Send for Item {}

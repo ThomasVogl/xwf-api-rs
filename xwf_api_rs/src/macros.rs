@@ -197,7 +197,7 @@ macro_rules! export_xt_process_item_ex {
         #[no_mangle]
         #[allow(non_snake_case, unused_variables)]
         pub extern "C" fn XT_ProcessItemEx(nItemID: LONG, hItem: HANDLE,  lpReserved: PVOID) -> LONG {
-            let res_item = $crate::item::ItemHandle::new(hItem, $crate::item::Item::new(nItemID));
+            let res_item = $crate::item::ItemHandle::new(hItem, $crate::item::Item::new(nItemID), false);
             if res_item.is_err() {
                 $crate::xwferror!("failed to parse hItem Argument");
                 $crate::xwferror!("XT_ProcessItemEx: stopping operation due to previous error");
