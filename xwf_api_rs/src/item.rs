@@ -575,6 +575,10 @@ impl Item {
             return Err(XwfError::XwfFunctionCallFailed("get_item_type"));
         }
 
+        if status < 0 {
+            return Err(XwfError::XwfFunctionCallFailed("get_item_type"));
+        }
+
         Ok(
             (   FileTypeStatus::try_from(status)?,
                 FileFormatConsistency::try_from(status)?,

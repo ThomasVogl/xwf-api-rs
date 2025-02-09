@@ -125,17 +125,13 @@ impl TryFrom<u32> for XtPrepareOpType {
 impl TryFrom<i32> for FileFormatConsistency {
     type Error = XwfError;
     fn try_from(value: i32) -> Result<Self, Self::Error> {
-        if value < 0 {
-            return Err(XwfError::InvalidEnumValue(("FileFormatConsistency", value as i64)));
-        }
-
         let val = (value & 0x0000FF00) >> 8;
         match val {
             x if x == FileFormatConsistency::Ok as i32 => Ok(FileFormatConsistency::Ok),
             x if x == FileFormatConsistency::Irregular as i32 => Ok(FileFormatConsistency::Irregular),
             x if x == FileFormatConsistency::Unknown as i32 => Ok(FileFormatConsistency::Unknown),
             #[cfg(feature = "strict_enum_checking")]
-            _ => Err(XwfError::InvalidEnumValue(("FileFormatConsistency", value as i64))),
+            _ => Err(XwfError::InvalidEnumValue(("FileFormatConsistency", val as i64))),
             #[cfg(not(feature = "strict_enum_checking"))]
             _ => {
                 xwfdebug!("FileFormatConsistency: unknown enum value {:?}", val);
