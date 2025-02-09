@@ -5,10 +5,6 @@ macro_rules! export_xt_init {
         #[no_mangle]
         #[allow(non_snake_case, unused_variables)]
         pub extern "C"  fn XT_Init(nVersion: DWORD, nFlags: DWORD, hMainWnd: HANDLE, lpReserved: PVOID) -> LONG {
-
-            unsafe {
-                RAW_API = $crate::raw_api::RawApi::load().ok();
-            }
             
             unsafe {
                 $variable = Some(<$variable_type>::create());
@@ -78,7 +74,6 @@ macro_rules! export_xt_done {
 
             //uninitalize raw api
             unsafe {
-                let _ = RAW_API.take();
                 let _ = $variable.take();
             }
             0
@@ -267,7 +262,6 @@ macro_rules! export_all_functions_ex {
     ($variable_name:ident, $variable_type:ty) => {
         use $crate::winapi::shared::minwindef::{DWORD, LPVOID};
         use $crate::winapi::shared::ntdef::{PVOID, LONG, HANDLE};
-        use $crate::raw_api::RAW_API;
 
         $crate::create_static_var!($variable_name, $variable_type);
 

@@ -42,7 +42,6 @@ pub enum PropType {
     NumberOfDataWindow      = 16,
 }
 
-
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone, Copy)]
 pub enum ItemInfoClassification {
     NormalFile                            = 0x00, //normal file
@@ -50,12 +49,8 @@ pub enum ItemInfoClassification {
     NtfsAlternateDataStream               = 0x08, //NTFS alternate data stream
     NtfsNonDirectoryIndex                 = 0x0A, //NTFS non-directory index
     NtfsBitmapAttribute                   = 0x0B, //NTFS bitmap attribute
-    NotDocumented1                        = 0x0E, //not documented but occuring
     NtfsGeneralLoggedUtilityStream        = 0x10, //NTFS general logged utility stream
     NtfsEfsLoggedUtilityStream            = 0x11, //NTFS EFS logged utility stream
-    NotDocumented2                        = 0xF2, //not documented but occuring
-    NotDocumented3                        = 0xF3, //not documented but occuring
-    NotDocumented4                        = 0xF4, //not documented but occuring
     EmailRelated                          = 0xF5, //e-mail related
     Excerpt                               = 0xF6, //excerpt
     ManuallyAttached                      = 0xF7, //manually attached
@@ -63,7 +58,7 @@ pub enum ItemInfoClassification {
     EmailAttachment                       = 0xF9, //e-mail attachment
     EmailMessage                          = 0xFA, //e-mail message
     IdnxRecordRemnant                     = 0xFD, //INDX record remnant
-    Unknown = 0xFF
+    UnknownEnumValue
 }
 
 pub enum EvObjPropType {
@@ -161,10 +156,10 @@ pub struct XtVersion {
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone, Copy)]
 pub enum FileFormatConsistency {
-    Unknown = 0,
-    Ok = 1,
-    Irregular = 2,
-    NotDocumented = 3,
+    Unknown             = 0,
+    Ok                  = 1,
+    Irregular           = 2,
+    UnknownEnumValue    = 255,
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone, Copy)]
@@ -174,18 +169,20 @@ pub enum ItemInfoDeletion {
     FirstClusterUnknown         = 2,   //previously existing, first cluster overwritten or unknown
     MovedPossibleRecoverable    = 3,   //renamed/moved, possibly recoverable
     MovedFirstClusterUnknown    = 4,   //renamed/moved, first cluster overwritten or unknown
-    CarvedFile                  = 5    //carved file (since v19.3 SR-3, used to be 1)
+    CarvedFile                  = 5,    //carved file (since v19.3 SR-3, used to be 1)
+    UnknownEnumValue            = 255,
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone, Copy)]
 pub enum FileTypeStatus {
-    NotVerified = 0,
-    TooSmall = 1,
-    TotallyUnknown = 2,
-    Confirmed=3,
-    NotConfirmed=4,
-    NewlyIdentified=5,
-    MismatchDetected=6,
+    NotVerified             = 0,
+    TooSmall                = 1,
+    TotallyUnknown          = 2,
+    Confirmed               = 3,
+    NotConfirmed            = 4,
+    NewlyIdentified         = 5,
+    MismatchDetected        = 6,
+    UnknownEnumValue        = 255,
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone, Copy)]

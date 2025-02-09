@@ -1,6 +1,7 @@
 use std::ffi::CStr;
 use std::mem::transmute_copy;
 use std::ptr::null_mut;
+use std::sync::LazyLock;
 use cstr::cstr;
 use winapi::shared::minwindef::{FARPROC, HMODULE};
 use winapi::um::libloaderapi::{GetModuleHandleW, GetProcAddress};
@@ -131,16 +132,13 @@ impl RawApi {
 }
 
 
-pub static mut RAW_API: Option<RawApi> = None;
+pub static RAW_API: LazyLock<RawApi> = LazyLock::new(|| {
+    RawApi::load().unwrap()
+});
 
 
 #[macro_export]
 macro_rules! get_raw_api {
-    () => {
-        unsafe {
-            RAW_API.as_ref().unwrap()
-        }
-        
-    }
+    () => { RAW_API }
 }
 

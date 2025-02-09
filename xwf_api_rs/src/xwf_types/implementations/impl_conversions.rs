@@ -1,4 +1,6 @@
 use crate::xwf_types::*;
+#[allow(unused_imports)]
+use crate::xwfdebug;
 
 impl Into<i32> for XtPrepareNegativeReturn {
     fn into(self) -> i32 {
@@ -54,12 +56,8 @@ impl TryFrom<i64> for ItemInfoClassification {
             x if x == Self::NtfsAlternateDataStream as i64          => Ok(Self::NtfsAlternateDataStream),
             x if x == Self::NtfsNonDirectoryIndex as i64            => Ok(Self::NtfsNonDirectoryIndex),
             x if x == Self::NtfsBitmapAttribute as i64              => Ok(Self::NtfsBitmapAttribute),
-            x if x == Self::NotDocumented1 as i64                   => Ok(Self::NotDocumented1),
             x if x == Self::NtfsGeneralLoggedUtilityStream as i64   => Ok(Self::NtfsGeneralLoggedUtilityStream),
             x if x == Self::NtfsEfsLoggedUtilityStream as i64       => Ok(Self::NtfsEfsLoggedUtilityStream),
-            x if x == Self::NotDocumented2 as i64                   => Ok(Self::NotDocumented2),
-            x if x == Self::NotDocumented3 as i64                   => Ok(Self::NotDocumented3),
-            x if x == Self::NotDocumented4 as i64                   => Ok(Self::NotDocumented4),
             x if x == Self::EmailRelated as i64                     => Ok(Self::EmailRelated),
             x if x == Self::Excerpt as i64                          => Ok(Self::Excerpt),
             x if x == Self::ManuallyAttached as i64                 => Ok(Self::ManuallyAttached),
@@ -67,7 +65,13 @@ impl TryFrom<i64> for ItemInfoClassification {
             x if x == Self::EmailAttachment as i64                  => Ok(Self::EmailAttachment),
             x if x == Self::EmailMessage as i64                     => Ok(Self::EmailMessage),
             x if x == Self::IdnxRecordRemnant as i64                => Ok(Self::IdnxRecordRemnant),
-            _ => Ok(Self::Unknown)
+            #[cfg(feature = "strict_enum_checking")]
+            _ => Err(XwfError::InvalidEnumValue(("ItemInfoClassification",value))),
+            #[cfg(not(feature = "strict_enum_checking"))]
+            _ => {
+                xwfdebug!("ItemInfoClassification: unknown enum value {:?}", value);
+                Ok(Self::UnknownEnumValue)
+            }
         }
     }
 }
@@ -130,8 +134,14 @@ impl TryFrom<i32> for FileFormatConsistency {
             x if x == FileFormatConsistency::Ok as i32 => Ok(FileFormatConsistency::Ok),
             x if x == FileFormatConsistency::Irregular as i32 => Ok(FileFormatConsistency::Irregular),
             x if x == FileFormatConsistency::Unknown as i32 => Ok(FileFormatConsistency::Unknown),
-            x if x == FileFormatConsistency::NotDocumented as i32 => Ok(FileFormatConsistency::NotDocumented),
-            _ => Err(XwfError::InvalidEnumValue(("FileFormatConsistency", value as i64)))
+            #[cfg(feature = "strict_enum_checking")]
+            _ => Err(XwfError::InvalidEnumValue(("FileFormatConsistency", value as i64))),
+            #[cfg(not(feature = "strict_enum_checking"))]
+            _ => {
+                xwfdebug!("FileFormatConsistency: unknown enum value {:?}", val);
+                Ok(FileFormatConsistency::UnknownEnumValue)
+            }
+
         }
     }
 }
@@ -147,7 +157,13 @@ impl TryFrom<i64> for ItemInfoDeletion {
             x if x == ItemInfoDeletion::MovedPossibleRecoverable as i64 => Ok(ItemInfoDeletion::MovedPossibleRecoverable),
             x if x == ItemInfoDeletion::MovedFirstClusterUnknown as i64 => Ok(ItemInfoDeletion::MovedFirstClusterUnknown),
             x if x == ItemInfoDeletion::CarvedFile as i64 => Ok(ItemInfoDeletion::CarvedFile),
-            _ => Err(XwfError::InvalidEnumValue(("ItemInfoDeletion",value)))
+            #[cfg(feature = "strict_enum_checking")]
+            _ => Err(XwfError::InvalidEnumValue(("ItemInfoDeletion",value))),
+            #[cfg(not(feature = "strict_enum_checking"))]
+            _ => {
+                xwfdebug!("ItemInfoDeletion: unknown enum value {:?}", value);
+                Ok(ItemInfoDeletion::UnknownEnumValue)
+            }
         }
     }
 }
@@ -168,7 +184,13 @@ impl TryFrom<i32> for FileTypeStatus {
             x if x == FileTypeStatus::NotConfirmed as i32 => Ok(FileTypeStatus::NotConfirmed),
             x if x == FileTypeStatus::NewlyIdentified as i32 => Ok(FileTypeStatus::NewlyIdentified),
             x if x == FileTypeStatus::MismatchDetected as i32 => Ok(FileTypeStatus::MismatchDetected),
-            _ => Err(XwfError::InvalidEnumValue(("FileTypeStatus", val as i64)))
+            #[cfg(feature = "strict_enum_checking")]
+            _ => Err(XwfError::InvalidEnumValue(("FileTypeStatus", val as i64))),
+            #[cfg(not(feature = "strict_enum_checking"))]
+            _ => {
+                xwfdebug!("FileTypeStatus: unknown enum value {:?}", val);
+                Ok(FileTypeStatus::UnknownEnumValue)
+            }
         }
     }
 }
@@ -176,8 +198,6 @@ impl TryFrom<i32> for FileTypeStatus {
 impl From<String> for FileTypeCategory {
     fn from(value: String) -> Self {
         match value.to_lowercase().as_str() {
-
-
             "pictures" => FileTypeCategory::Picture,
             "text, word processing" => FileTypeCategory::Word,
             "e-mail" => FileTypeCategory::Email,
