@@ -128,7 +128,12 @@ impl TryFrom<i32> for FileFormatConsistency {
         let val = (value & 0x0000FF00) >> 8;
         match val {
             x if x == FileFormatConsistency::Ok as i32 => Ok(FileFormatConsistency::Ok),
+            #[cfg(feature = "api_20_5")]
             x if x == FileFormatConsistency::Irregular as i32 => Ok(FileFormatConsistency::Irregular),
+            #[cfg(feature = "api_20_5")]
+            x if x == FileFormatConsistency::Corrupt as i32 => Ok(FileFormatConsistency::Corrupt),
+            #[cfg(not(feature = "api_20_5"))]
+            x if x == FileFormatConsistency::CorruptOrIrregular as i32 => Ok(FileFormatConsistency::CorruptOrIrregular),
             x if x == FileFormatConsistency::Unknown as i32 => Ok(FileFormatConsistency::Unknown),
             #[cfg(feature = "strict_enum_checking")]
             _ => Err(XwfError::InvalidEnumValue(("FileFormatConsistency", val as i64))),

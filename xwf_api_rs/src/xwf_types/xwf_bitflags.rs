@@ -128,10 +128,26 @@ bitflags! {
     }
 
     pub struct AddReportTableFlags: u32 {
-        const CreatedByApplication          = 0x01; // show as created by application, not by examiner
-        const SelectForInclusionInReport    = 0x02; // select for inclusion in report
-        const SelectForFiltering            = 0x04; // select for filtering
-        const SelectForManualAssocs         = 0x08; // select for future manual associations
+        const CreatedByApplication          = 0x0001; // treat as a label created by the application to make the examiner aware of something
+        const CreatedByExaminer             = 0x0002; // treat as a label created by the examiner
+        const RepresentHashsetMatch         = 0x0004; // treat as a label that represents a hash set match
+
+        const SelectForInclusionInReport    = 0x0010; // selected for inclusion in report
+        const SelectForFiltering            = 0x0020; // selected for filtering
+        const SelectForManualAssocs         = 0x0040; // selected for future manual use
+
+        const RepresentSearchTerm           = 0x0080; // treat as a label that represents a search term
+
+        const GuiApplyToSelectedItem        = 0x0100; // in the GUI by default applied to the selected item
+        const GuiApplyToParent              = 0x0200; // in the GUI by default applied to the parent
+        const GuiApplyToDirectChilds        = 0x0400; // in the GUI by default applied to direct child objects
+        const GuiApplyToRecursiveChilds     = 0x0800; // in the GUI by default applied to child objects recursively
+        const GuiApplyToDuplicates          = 0x1000; // in the GUI by default applied to known duplicates
+
+        const RepresentPictureContent       = 0x2000; // treat as a label that represents picture content
+        const RepresentGroupOfDuplicates    = 0x4000; // treat as a label that represents a group of duplicates
+
+        const OfferedForInclusionInReport   = 0x8000; // offered for inclusion in report
         // The source may set any bits
         const _ = !0;
     }

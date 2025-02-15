@@ -158,7 +158,12 @@ pub struct XtVersion {
 pub enum FileFormatConsistency {
     Unknown             = 0,
     Ok                  = 1,
-    Irregular           = 2,
+    #[cfg(not(feature = "api_20_5"))]
+    CorruptOrIrregular  = 2,
+    #[cfg(feature = "api_20_5")]
+    Corrupt             = 2,
+    #[cfg(feature = "api_20_5")]
+    Irregular           = 3,
     UnknownEnumValue    = 255,
 }
 
