@@ -3,10 +3,11 @@ use std::ptr::{null, null_mut};
 use winapi::shared::minwindef::DWORD;
 use winapi::shared::ntdef::{HANDLE, LONG, LPWSTR, PVOID};
 use winsafe::WString;
+use crate::application::Application;
 use crate::get_raw_api;
 use crate::volume::Volume;
 use crate::error::XwfError;
-
+use crate::item::Item;
 use crate::raw_api::RAW_API;
 use crate::xwf_types::*;
 
@@ -262,6 +263,35 @@ impl Evidence {
 
     pub fn set_child(&mut self, evidence_id: u32) {
         self.child_evidence_id = Some(evidence_id)
+    }
+
+
+    pub fn iterate<F, R, S: AsRef<str>>(&self, caption: S, item_consumer: F) -> Result<Vec<R>, XwfError>
+    where F: Fn(&Evidence, &Item) -> Result<R,XwfError> {
+        let vol = self.open()?;
+        let num_items = vol.select()?;
+
+        let mut ret: Vec<R> = Vec::with_capacity(num_items as usize);
+
+        Application::show_progress(caption, ProgressFlags::empty());
+
+        // set progress description
+        Application::set_progress_description(format!("processing items of evidence \"{}\"", self.get_name()?));
+        Application::set_progress_percentage(0, num_items as u32);
+
+
+        // iterate over all items (number == item id)
+        for item_id in 0..num_items {
+            Application::should_stop()?;
+
+            let item = Item::new(item_id as i32);
+            ret.push(item_consumer(self, &item)?);
+            Application::set_progress_percentage((item_id+1) as u32, num_items as u32);
+        }
+
+        Application::hide_progress();
+
+        Ok(ret)
     }
 }
 

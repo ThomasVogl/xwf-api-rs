@@ -82,7 +82,7 @@ impl Case {
         Case {
             report_tables: HashMap::new(),
             report_tables_by_name: HashMap::new(),
-            report_table_map: HashMap::new(),
+            report_table_map: HashMap::new()
         }
     }
 
@@ -120,6 +120,8 @@ impl Case {
         Ok(ret)
     }
 
+
+
     pub fn iterate<F, R>(item_consumer: F) -> Result<Vec<R>, XwfError>
     where F: Fn(Item) -> Result<R,XwfError> {
 
@@ -154,6 +156,19 @@ impl Case {
         Ok(ret)
     }
 
+    pub fn iterate_evidence<F, R>(evidence_consumer: F) -> Result<Vec<R>, XwfError>
+    where F: Fn(&Evidence) -> Result<R,XwfError> {
+        let mut ret:Vec<R> = Vec::new();
+
+        let mut evidence_iterator = EvidenceIterator::new();
+
+        while let Some(ev) = evidence_iterator.next() {
+            ret.push(evidence_consumer(&ev)?);
+        }
+
+        Ok(ret)
+    }
+
     pub fn contained_in_report_table(&self, t: &Option<&ReportTable>, evidence: &Evidence, item: &Item) -> bool {
         t.and_then(|t| {
             self.report_table_map.get(&evidence.get_id()).and_then(|tables| {
@@ -162,6 +177,12 @@ impl Case {
                 })
             })
         }).unwrap_or(false)
+    }
+
+    pub fn get_items_for_report_table(&self, t: &ReportTable, evidence: &Evidence) -> Option<Vec<Item>> {
+        let ev_map = self.report_table_map.get(&evidence.get_id())?;
+        let item_ids  = ev_map.get(t)?;
+        Some(item_ids.iter().map(|i| Item::new(*i as i32)).collect())
     }
 
     pub fn get_cached_report_tables(&self, evidence: &Evidence, item: &Item) -> Vec<&ReportTable> {
@@ -176,6 +197,10 @@ impl Case {
 
     pub fn get_report_table_by_name(&self, name: &str) -> Option<&ReportTable> {
         self.report_tables_by_name.get(name)
+    }
+
+    pub fn exist_report_table(&self, name: &str) -> bool {
+        self.report_tables_by_name.get(name).is_some()
     }
 
     pub fn get_report_table_by_id(&self, id: &u16) -> Option<&ReportTable> {

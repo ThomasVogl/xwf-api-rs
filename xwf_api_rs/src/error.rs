@@ -22,6 +22,7 @@ pub enum XwfError {
     InvalidVersionNumber,
     IncompatibleXwfVersion(XtVersion, (u16, u16)),
     IoError(io::Error),
+    UserError(&'static str),
 }
 
 
@@ -47,6 +48,7 @@ impl Display for XwfError {
             Current Version {}.{} SR-{}, minimal required version {}.{} \
             Consider upgrading XWF or downgrading API level of xwf-api-rs (feature \"api_<major>_<minor>\")", version.major, version.minor, version.service_release,  expected.0, expected.1),
             XwfError::IoError(e) => write!(f, "io error occurred: {}", e),
+            XwfError::UserError(msg) => write!(f, "{}", msg),
         }
     }
 }
