@@ -2,12 +2,9 @@
 
 ## Prerequisites
 - Skills 
-  - some practical experience with [rust-lang](https://www.rust-lang.org/learn)
+  - some practical coding experience with [rust-lang](https://www.rust-lang.org/learn)
   - experienced user of [X-Ways Forensics](https://www.x-ways.net/forensics/index-d.html)
   - good understanding of the basic concepts of the [X-Ways X-Tension API](https://www.x-ways.net/forensics/x-tensions/api.html)
-    - ideally you already went through all the pain of developing X-Tensions with low-level C
-      
-      (in this case I'm sure you will love this library 😉 )
 - Installation of [Visual Studio Build Tools 2022](https://aka.ms/vs/17/release/vs_BuildTools.exe)
     - select Workload  _C++ Desktop Development_
     - also select Component _C++/CLI Support for v143-Buildtools (latest)_
@@ -53,4 +50,4 @@
       export_all_functions!(<name of static variable (can be anything)>, <struct-Name that impls XTension trait>);`
       ```
       This macro statement does all the magic of defining and exporting functions for the resulting DLL-Library
-  - Have fun with rust and X-Ways!
+  - Have fun with Rust and X-Ways!
