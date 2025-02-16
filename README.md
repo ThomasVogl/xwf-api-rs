@@ -1,6 +1,6 @@
 # xwf-api-rs
 
-Unofficial Rust Bindings for X-Ways Forensics X-Tension API
+Unofficial Rust Bindings for **X-Ways Forensics** X-Tension API
 
 
 ## Description
@@ -12,6 +12,7 @@ By leveraging the high performance and safety features of Rust,
 this binding enables seamless integration with the X-Tension API, 
 facilitating the development of custom forensic tools and automation solutions 
 for digital forensics workflows.
+
 
 ## Example Usage
 In _example_ subdirectory reside some sample projects that 
@@ -34,21 +35,50 @@ Currently following examples are existing:
   - shows how to get some data portions of an item
   - shows how to get case information and computing a unique id for items
   - shows how to export item data to any location
+- [**xt-item-parser-rs**](examples/xt-process-data-rs)
+  - shows how to iterate over evidences and items
+  - shows how to write some item information to a CSV file
   
 
 ## Current state of development
+**Version 1.0.0 released.**
 
-A detailed API documentation and some more advanced examples are still missing but will follow soon.
+Not all available functionality of the X-Tension C API has been translated to Rust yet.
 
-Implementation is still very incomplete in respect to the translated features from the X-Tension C API. 
-So current functionality may not fit your needs yet.
-Furthermore the high-level rust API may still be heavily changed, so I do not recommend to use it productively
-unless you are not scared of extensive refactoring sessions.
+However, the implemented parts are stable and can already be used for certain production use cases, 
+provided they meet your requirements.
 
-But besides that, the functionality that is currently implemented seems to work quite well already.
-You can easily interact with evidence-objects and their items,
-query its attributes such as name, timestamps, paths and parent items, file types/categories, metadata and much more.
-It is also possible already to read the binary data of an item.
+The architectural concept of the API should be quite stable and settled, 
+having been tested and used in some real-world scenarios.
+
+From now on, any incompatible changes to the existing API 
+will result in a major version increment. 
+The goal is to maintain backward compatibility 
+for all upcoming 1.x.x versions in accordance with [semver.org](https://semver.org/).
+
+
+### Available Features
+- macro expressions for defining and exporting all required DLL-functions for X-Tension, 
+  so the needed boilerplate-code for new projects reduced to the absolute bare minimum.
+- compile-time definition of desired XWF API Level (via rust feature)
+  - behaviour *xwf-api-rs* will adapt its functionality according to the specified XWF-API version
+  - automatic runtime checks for XWF version to ensure X-Tension compatibility
+- convenient macro-expressions for XWF log outputs (xwfinfo!(...), xwfwarn!(...), xwfdebug!(...))
+- proper enumeration- and bitflag-types for most of numerical XWF-API values 
+- proper error handling
+  - runtime error checks for most XWF-API calls
+  - well-defined error-type XwfError represents all different kinds of API failures
+  - handling of undocumented/newly-introduced enumeration-values from XWF C-API
+- object-oriented interface interacting with "items", "evidences" and "volumes"
+  - getters and setters for most of available item attributes
+  - iterate over parent items
+  - read binary data from items
+  - create new items from data in memory
+  - (de-)serialization capability for most of item-attributes
+  - "UniqueItemId"-type for identifying items across different evidences
+- multithreading capability
+- convenience functions for iterating over all evidences and items
+- convenience functions for accessing/querying items within report tables
 
 
 ## Project Goals
@@ -58,6 +88,7 @@ It is also possible already to read the binary data of an item.
 - Use idiomatic Rust features to facilitate a safe, robust and intuitive way of using the API
 - Simplify project setup for new X-Tensions
 - Identify possible problems and bugs within the XWF API functions
+
 
 ## License
 This project is licensed under the **LGPLv3 (Lesser General Public License)**. 
