@@ -163,6 +163,8 @@ impl Case {
         let mut evidence_iterator = EvidenceIterator::new();
 
         while let Some(ev) = evidence_iterator.next() {
+            let volume = ev.open()?;
+            let _ = volume.select()?;
             ret.push(evidence_consumer(&ev)?);
         }
 
