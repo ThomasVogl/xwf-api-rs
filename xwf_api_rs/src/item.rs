@@ -1,3 +1,4 @@
+use std::cmp::PartialEq;
 use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io::{Write};
@@ -26,8 +27,9 @@ use crate::application::Application;
 use crate::util::char_ptr_to_string;
 
 const DEFAULT_DATA_CHUNK_SIZE: usize = 1*1024*1024;
-const BUF_SIZE_REPORT_TABLE_QUERY: usize = 8192;
-const BUF_SIZE_REPORT_HASHSET_QUERY: usize = 4096;
+const BUF_SIZE_HASHSET_QUERY: usize = 512;
+const BUF_SIZE_REPORTTABLE_QUERY: usize = 1024;
+const MAX_BUF_SIZE: usize = 65535;
 
 pub struct ItemIterator {
     cur_item: Option<Item>,
@@ -184,6 +186,8 @@ impl<'de> Deserialize<'de> for UniqueItemId {
         UniqueItemId::try_from(s).map_err(serde::de::Error::custom)
     }
 }
+
+
 
 impl Item {
 
@@ -466,8 +470,30 @@ impl Item {
         let _ = (get_raw_api!().get_item_type)(self.item_id, buf.as_mut_ptr(), buf_and_flags);
         Ok(winsafe::WString::from_wchars_slice(&buf).to_string())
     }
-    pub fn __get_report_tables(&self) -> Result<Vec<String>, XwfError> {
-        let mut buf = [0u16; BUF_SIZE_REPORT_TABLE_QUERY];
+
+
+    pub fn get_report_tables(&self) -> Result<Vec<String>, XwfError> {
+        let mut buf_size = BUF_SIZE_REPORTTABLE_QUERY;
+        let mut current_res: Result<Vec<String>, XwfError > = Err(XwfError::GivenBufferToSmallForContent);
+
+        while buf_size < MAX_BUF_SIZE && current_res.as_ref().is_err_and(|e| e.is_buffer_too_small()) {
+            match self.get_report_tables_internal(buf_size) {
+                Ok(v) => {
+                    current_res = Ok(v)
+                }
+                Err(e) => {
+                    buf_size = buf_size*2;
+                    current_res = Err(e)
+                }
+            }
+        }
+        current_res
+    }
+
+    fn get_report_tables_internal(&self, buf_size: usize) -> Result<Vec<String>, XwfError> {
+        let mut buf: Vec<u16> = Vec::new();
+        buf.resize(buf_size, 0);
+
         let num_assocs = (get_raw_api!().get_report_table_assocs)(self.item_id, buf.as_mut_ptr(), buf.len() as i32);
 
         if num_assocs == 0 {
@@ -483,8 +509,28 @@ impl Item {
         }
     }
 
+
     pub fn get_hash_sets(&self) -> Result<Vec<String>, XwfError> {
-        let mut buf = [0u16; BUF_SIZE_REPORT_HASHSET_QUERY];
+        let mut buf_size = BUF_SIZE_HASHSET_QUERY;
+        let mut current_res: Result<Vec<String>, XwfError > = Err(XwfError::GivenBufferToSmallForContent);
+
+        while buf_size < MAX_BUF_SIZE && current_res.as_ref().is_err_and(|e| e.is_buffer_too_small()) {
+            match self.get_hash_sets_internal(buf_size) {
+                Ok(v) => {
+                    current_res = Ok(v)
+                }
+                Err(e) => {
+                    buf_size = buf_size*2;
+                    current_res = Err(e)
+                }
+            }
+        }
+        current_res
+    }
+
+    fn get_hash_sets_internal(&self, buf_size: usize) -> Result<Vec<String>, XwfError> {
+        let mut buf: Vec<u16> = Vec::new();
+        buf.resize(buf_size, 0);
         let num_assocs = (get_raw_api!().get_hashset_assocs)(self.item_id, buf.as_mut_ptr(), buf.len() as i32);
 
         if num_assocs < 0 {
