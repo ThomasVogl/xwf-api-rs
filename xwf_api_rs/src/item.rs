@@ -78,11 +78,18 @@ impl Hash for Item {
 }
 
 
-#[derive(Copy, Clone, Debug, Hash)]
+#[derive(Copy, Clone, Debug)]
 pub struct UniqueItemId {
     pub item_id: i32,
     pub evidence_id: u32,
     pub short_ev_id: u16,
+}
+
+impl Hash for UniqueItemId {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.item_id.hash(state);
+        self.evidence_id.hash(state);
+    }
 }
 
 impl PartialEq for UniqueItemId {
