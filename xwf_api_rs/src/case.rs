@@ -308,16 +308,14 @@ impl Case {
     }
 
     pub fn get_report_tables() -> Vec<ReportTable> {
-        let mut optional: LONG = 0;
+        let mut num_tables: LONG = 0;
         let mut ret: Vec<ReportTable> = Vec::new();
         //get num of report tables
-        (get_raw_api!().get_report_table_info)(null_mut(), -1, &mut optional as PLONG);
-
-        let num_tables = optional;
+        (get_raw_api!().get_report_table_info)(null_mut(), -1, &mut num_tables as PLONG);
 
 
         for i in 0..num_tables {
-            optional = 0;
+            let mut optional = 0;
             let wstr_ptr = (get_raw_api!().get_report_table_info)(null_mut(), i, &mut optional as PLONG) as LPWSTR;
             if wstr_ptr != null_mut() {
                 unsafe {
