@@ -178,6 +178,14 @@ pub enum ItemInfoDeletion {
     UnknownEnumValue            = 255,
 }
 
+pub enum ItemInfoColorAnalysis {
+    NotAvailable,
+    Error,
+    Irrelevant,
+    Grayscale,
+    Percentage(u8)
+}
+
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone, Copy)]
 pub enum FileTypeStatus {
     NotVerified             = 0,
@@ -190,7 +198,7 @@ pub enum FileTypeStatus {
     UnknownEnumValue        = 255,
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone)]
 pub enum FileTypeCategory {
     Picture,
     Word,
@@ -226,7 +234,7 @@ pub enum FileTypeCategory {
     Font,
     StillImage,
     Unknown,
-    Other,
+    Other(String)
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -253,3 +261,4 @@ pub enum VolumeNameType {
     NORMAL = 2,
     LONG =   1
 }
+

@@ -234,7 +234,25 @@ impl From<String> for FileTypeCategory {
             "still image" => FileTypeCategory::StillImage,
             "other/unknown type" => FileTypeCategory::Unknown,
             "anderer/unbek. typ" => FileTypeCategory::Unknown,
-            _ => FileTypeCategory::Other
+            _ => FileTypeCategory::Other(value)
+        }
+    }
+}
+
+impl TryFrom<i64> for ItemInfoColorAnalysis {
+    type Error = XwfError;
+
+    fn try_from(value: i64) -> Result<Self, XwfError> {
+
+        if value < 0 {
+            match value {
+                -2 => Ok(ItemInfoColorAnalysis::Error),
+                -3 => Ok(ItemInfoColorAnalysis::Grayscale),
+                -4 => Ok(ItemInfoColorAnalysis::Irrelevant),
+                _ => Ok(ItemInfoColorAnalysis::NotAvailable)
+            }
+        } else {
+            Ok(ItemInfoColorAnalysis::Percentage(value as u8))
         }
     }
 }
