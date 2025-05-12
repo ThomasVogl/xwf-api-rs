@@ -106,11 +106,15 @@ bitflags! {
         const SelectedForFilter             = 0x0020; //selected for the label/report table filter
         const SelectedForNewAssociations    = 0x0040; //selected for new assocations
         const RepresentsSearchTerm          = 0x0080; //represents a search term
-        const NotDocumented1                = 0x0100; //flag not documented in XWF API but was observed
-        const NotDocumented2                = 0x1000; //flag not documented in XWF API but was observed
+        const GuiApplyToSelectedItem        = 0x0100; // in the GUI by default applied to the selected item
+        const GuiApplyToParent              = 0x0200; // in the GUI by default applied to the parent
+        const GuiApplyToDirectChilds        = 0x0400; // in the GUI by default applied to direct child objects
+        const GuiApplyToRecursiveChilds     = 0x0800; // in the GUI by default applied to child objects recursively
+        const GuiApplyToDuplicates          = 0x1000; // in the GUI by default applied to known duplicates
         const DetectedObjectInPhoto         = 0x2000; //detected object in photo
         const RepresentsDuplicateFiles      = 0x4000; //represents a group of duplicate files
         const OfferedForSelectionInReport   = 0x8000; //offered for selection in the report
+
         // The source may set any bits
         const _ = !0;
     }
