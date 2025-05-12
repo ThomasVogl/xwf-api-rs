@@ -105,18 +105,18 @@ impl TryFrom<u32> for XtVersion {
     }
 }
 
-impl TryFrom<u32> for XtPrepareOpType {
+impl TryFrom<u32> for XtOpType {
     type Error = ();
 
     fn try_from(value: u32) -> Result<Self, Self::Error> {
         match value {
-            x if x == XtPrepareOpType::ActionRun as u32 => Ok(XtPrepareOpType::ActionRun),
-            x if x == XtPrepareOpType::ActionVolumeSnapshotRefinement as u32 => Ok(XtPrepareOpType::ActionVolumeSnapshotRefinement),
-            x if x == XtPrepareOpType::ActionLogicalSearch as u32 => Ok(XtPrepareOpType::ActionLogicalSearch),
-            x if x == XtPrepareOpType::ActionPhysicalSearch as u32 => Ok(XtPrepareOpType::ActionPhysicalSearch),
-            x if x == XtPrepareOpType::DirectoryBrowserContextMenu as u32 => Ok(XtPrepareOpType::DirectoryBrowserContextMenu),
-            x if x == XtPrepareOpType::SearchHitListContextMenu as u32 => Ok(XtPrepareOpType::SearchHitListContextMenu),
-            x if x == XtPrepareOpType::EventListContextMenu as u32 => Ok(XtPrepareOpType::EventListContextMenu),
+            x if x == XtOpType::ActionRun as u32 => Ok(XtOpType::ActionRun),
+            x if x == XtOpType::ActionVolumeSnapshotRefinement as u32 => Ok(XtOpType::ActionVolumeSnapshotRefinement),
+            x if x == XtOpType::ActionLogicalSearch as u32 => Ok(XtOpType::ActionLogicalSearch),
+            x if x == XtOpType::ActionPhysicalSearch as u32 => Ok(XtOpType::ActionPhysicalSearch),
+            x if x == XtOpType::DirectoryBrowserContextMenu as u32 => Ok(XtOpType::DirectoryBrowserContextMenu),
+            x if x == XtOpType::SearchHitListContextMenu as u32 => Ok(XtOpType::SearchHitListContextMenu),
+            x if x == XtOpType::EventListContextMenu as u32 => Ok(XtOpType::EventListContextMenu),
             _ => Err(()),
         }
     }

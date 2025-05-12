@@ -2,14 +2,15 @@ use std::cell::RefCell;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
-use xwf_api_rs::{export_all_functions, xwf_types::*, traits::XTension, error::XwfError, window::Window, evidence::Evidence, case::Case, item::Item, volume::Volume};
+use xwf_api_rs::{export_all_functions, xwf_types::*, traits::XTension, error::XwfError, evidence::Evidence, case::Case, item::Item};
+use xwf_api_rs::context::ExecutionContext;
 
 // define a custom structure representing your extension
 // could also have attributes of course
 pub struct CountItemsXTension {
+    context: ExecutionContext,
     case: Case
 }
-
 
 pub fn parse_classification(_case: &Case, evidence: &Evidence, item: &Item, log_file: &RefCell<File>) -> Result<(), XwfError> {
 
@@ -65,7 +66,7 @@ pub fn parse_classification(_case: &Case, evidence: &Evidence, item: &Item, log_
 
     log_file.borrow_mut().write_fmt(format_args!("{};{};{};{};{};{};{};{}\r\n",
                                                  item.unique_id(evidence),
-                                                 item.get_path(),
+                                                 item.get_path()?,
                                                  item_type,
                                                  item.get_size(),
                                                  classification,
@@ -89,25 +90,29 @@ impl XTension for CountItemsXTension {
     type XTensionError = XwfError;
 
     // function to create an instance of your XTension struct
-    fn create() -> CountItemsXTension {
+    fn create(context: ExecutionContext) -> CountItemsXTension {
         CountItemsXTension {
+            context,
             case: Case::new()
         }
     }
 
+    fn get_context_mut(&mut self) -> &mut ExecutionContext {
+        &mut self.context
+    }
+
+    fn get_context(&self) -> &ExecutionContext {
+        &self.context
+    }
+
     //function to initialize the X-Tension. Wraps XT_Init() Function from C API
-    fn xt_init(&mut self, _version: XtVersion, _: XtInitFlags, _: Option<Window>, _: XtLicenseInfo) -> Result<XtInitReturn, Self::XTensionError> {
-
-
-        // compute cache for report table assignments
-        // optimizes requests for getting report tables for single item
-        self.case.compute_report_table_cache()?;
+    fn xt_init(&mut self) -> Result<XtInitReturn, Self::XTensionError> {
         Ok(XtInitReturn::RunSingleThreaded)
     }
 
     //prepare function wraps XT_Prepare() Function from C API
     //please refer to X-Ways X-Tension API doc for details regarding calling logic
-    fn xt_prepare(&mut self, _: Option<Volume>, _: Option<Evidence>, op_type: XtPrepareOpType) -> Result<XtPrepareReturn, Self::XTensionError> {
+    fn xt_prepare(&mut self) -> Result<XtPrepareReturn, Self::XTensionError> {
         let case_infos =Case::get_case_infos()?;
         let log_file_path = Path::new(&case_infos.dir)
             .parent().unwrap()
@@ -123,7 +128,7 @@ impl XTension for CountItemsXTension {
         log_file.borrow_mut().write("UniqueId;Path;FileType;FileSize;ItemInfoClassification;ItemInfoDeletion;(FileTypeStatus,FileFormatConsistency,FileTypeCategory);ItemInfoFlags;\r\n".as_bytes())
             .map_err(|e| XwfError::IoError(e))?;
 
-        if op_type == XtPrepareOpType::ActionRun {
+        if self.context.is_supported_operation(&[XtOpType::ActionRun]) {
             let _ = self.case.iterate_ext(|case, evidence, item| {parse_classification(&case, evidence, item, &log_file)})?;
 
         }

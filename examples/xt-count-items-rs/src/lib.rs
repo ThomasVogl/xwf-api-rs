@@ -4,16 +4,15 @@ use xwf_api_rs::{
     xwf_types::*,
     traits::XTension,
     error::XwfError,
-    window::Window,
-    evidence::Evidence,
     case::Case,
-    item::Item,
-    volume::Volume
+    item::Item
 };
+use xwf_api_rs::context::ExecutionContext;
 
 // define a custom structure representing your extension
 // could also have attributes of course
 pub struct CountItemsXTension {
+    context: ExecutionContext,
     case: Case
 }
 
@@ -43,14 +42,23 @@ impl XTension for CountItemsXTension {
     type XTensionError = XwfError;
 
     // function to create an instance of your XTension struct
-    fn create() -> CountItemsXTension {
+    fn create(context: ExecutionContext) -> CountItemsXTension {
         CountItemsXTension {
+            context,
             case: Case::new()
         }
     }
 
+    fn get_context_mut(&mut self) -> &mut ExecutionContext {
+        &mut self.context
+    }
+
+    fn get_context(&self) -> &ExecutionContext {
+        &self.context
+    }
+
     //function to initialize the X-Tension. Wraps XT_Init() Function from C API
-    fn xt_init(&mut self, _version: XtVersion, _: XtInitFlags, _: Option<Window>, _: XtLicenseInfo) -> Result<XtInitReturn, Self::XTensionError> {
+    fn xt_init(&mut self) -> Result<XtInitReturn, Self::XTensionError> {
         // compute cache for report table assignments
         // optimizes requests for getting report tables for single item
         self.case.compute_report_table_cache()?;
@@ -59,9 +67,8 @@ impl XTension for CountItemsXTension {
 
     //prepare function wraps XT_Prepare() Function from C API
     //please refer to X-Ways X-Tension API doc for details regarding calling logic
-    fn xt_prepare(&mut self, _: Option<Volume>, _: Option<Evidence>, op_type: XtPrepareOpType) -> Result<XtPrepareReturn, Self::XTensionError> {
-
-        if op_type == XtPrepareOpType::ActionRun {
+    fn xt_prepare(&mut self) -> Result<XtPrepareReturn, Self::XTensionError> {
+        if self.context.is_supported_operation(&[XtOpType::ActionRun]) {
             let categories:Vec<FileTypeCategory> = Case::iterate(|i| self.get_item_category(i))?
                 .iter()
                 .filter_map(|&c| c ).collect();

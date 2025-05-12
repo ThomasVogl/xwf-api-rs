@@ -1,8 +1,8 @@
+
 use crate::xwf_types::*;
 use winapi::shared::ntdef::HANDLE;
-use crate::evidence::Evidence;
+use crate::context::ExecutionContext;
 use crate::item::{Item, ItemHandle};
-use crate::volume::Volume;
 use crate::window::Window;
 
 
@@ -14,9 +14,14 @@ pub trait XTension {
 
     type XTensionError;
 
-    fn create() -> Self;
+    fn create(context: ExecutionContext) -> Self;
 
-    fn xt_init(&mut self, _version: XtVersion, _flags: XtInitFlags, _window: Option<Window>, _lic_info: XtLicenseInfo) -> Result<XtInitReturn, Self::XTensionError> {
+    fn get_context_mut(&mut self) -> &mut ExecutionContext;
+
+    fn get_context(&self) -> &ExecutionContext;
+
+
+    fn xt_init(&mut self) -> Result<XtInitReturn, Self::XTensionError> {
         Ok(XtInitReturn::RunSingleThreaded)
     }
 
@@ -26,7 +31,7 @@ pub trait XTension {
     fn xt_about(&mut self, _: Option<Window>) -> Result<(), Self::XTensionError> {
         Ok(())
     }
-    fn xt_prepare(&mut self, _volume: Option<Volume>, _evidence: Option<Evidence>, _op_type: XtPrepareOpType) -> Result<XtPrepareReturn, Self::XTensionError> {
+    fn xt_prepare(&mut self) -> Result<XtPrepareReturn, Self::XTensionError> {
         Ok(XtPrepareReturn::Positive(XtPreparePositiveReturnFlags::CallProcessItemLate))
     }
     fn xt_process_item(&mut self, _item: Item) -> Result<XtProcessItemReturn, Self::XTensionError> {
@@ -36,7 +41,7 @@ pub trait XTension {
         Ok(XtProcessItemExReturn::Ok)
     }
 
-    fn xt_finalize(&mut self, _volume: Option<Volume>, _evidence: Option<Evidence>, _op_type: XtPrepareOpType) -> Result<XtFinalizeReturn, Self::XTensionError> {
+    fn xt_finalize(&mut self) -> Result<XtFinalizeReturn, Self::XTensionError> {
         Ok(XtFinalizeReturn::Ok)
     }
 }

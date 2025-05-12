@@ -4,15 +4,15 @@ use xwf_api_rs::{
     xwf_types::*,
     traits::XTension,
     error::XwfError,
-    window::Window,
-    evidence::Evidence,
-    volume::Volume,
     application::Application
 };
+use xwf_api_rs::context::ExecutionContext;
 
 // define a custom structure representing your extension
 // could also have attributes of course
-pub struct HelloWorldXTension {}
+pub struct HelloWorldXTension {
+    context: ExecutionContext,
+}
 
 // implement XTension Trait
 // most of the function have a default and empty implementation already
@@ -22,23 +22,32 @@ impl XTension for HelloWorldXTension {
     type XTensionError = XwfError;
 
     // function to create an instance of your XTension struct
-    fn create() -> HelloWorldXTension {
-        HelloWorldXTension {}
+    fn create(context: ExecutionContext) -> HelloWorldXTension {
+        HelloWorldXTension {
+            context
+        }
+    }
+
+    fn get_context_mut(&mut self) -> &mut ExecutionContext {
+        &mut self.context
+    }
+
+    fn get_context(&self) -> &ExecutionContext {
+        &self.context
     }
 
     //function to initialize the X-Tension. Wraps XT_Init() Function from C API
-    fn xt_init(&mut self, _version: XtVersion, _: XtInitFlags, _: Option<Window>, _: XtLicenseInfo) -> Result<XtInitReturn, Self::XTensionError> {
+    fn xt_init(&mut self) -> Result<XtInitReturn, Self::XTensionError> {
         Ok(XtInitReturn::RunSingleThreaded)
     }
 
     //prepare function wraps XT_Prepare() Function from C API
     //please refer to X-Ways X-Tension API doc for details regarding calling logic
-    fn xt_prepare(&mut self, _: Option<Volume>, _: Option<Evidence>, op_type: XtPrepareOpType) -> Result<XtPrepareReturn, Self::XTensionError> {
-
-
+    fn xt_prepare(&mut self) -> Result<XtPrepareReturn, Self::XTensionError> {
+        
         //check if we were called from main menu
         //if not then we will do nothing...
-        if op_type != XtPrepareOpType::ActionRun {
+        if !self.context.is_supported_operation(&[XtOpType::ActionRun])  {
             xwferror!("Operation Mode not supported");
             return Ok(XtPrepareReturn::Negative(XtPrepareNegativeReturn::JustCallXtFinalize));
         }
@@ -67,7 +76,7 @@ impl XTension for HelloWorldXTension {
             std::thread::sleep(std::time::Duration::from_millis(10));
 
             //set progress and description text of progress bar
-            Application::set_progress_percentage(i, num_rounds as u32);
+            Application::set_progress_percentage(i, num_rounds);
             Application::set_progress_description(format!("{:.2} seconds have passed", i as f32/100.0f32));
         }
 

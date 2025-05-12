@@ -417,19 +417,37 @@ impl Item {
         (get_raw_api!().get_item_size)(self.item_id) as usize
     }
 
-    pub fn get_name(&self) -> String {
-        let wchr_ptr = (get_raw_api!().get_item_name)(self.item_id as DWORD);
-        let s = unsafe { winsafe::WString::from_wchars_nullt(wchr_ptr) };
-        s.to_string()
+
+    pub fn get_name(&self, alt_name: bool) -> Result<String, XwfError> {
+        let mut item_id: DWORD = self.item_id as DWORD;
+        if alt_name {
+            item_id = item_id | 0x80000000;
+        }
+
+        let wchr_ptr = (get_raw_api!().get_item_name)(item_id);
+        if wchr_ptr.is_null() {
+            Err(XwfError::XwfFunctionCallFailed("get_item_name"))
+        } else {
+            let s = unsafe { winsafe::WString::from_wchars_nullt(wchr_ptr) };
+            Ok(s.to_string())
+        }
+
     }
 
-    pub fn get_path(&self) -> String {
+    pub fn get_path(&self) -> Result<String, XwfError> {
 
-        let mut path_components: Vec<String> = self.iter().map(|p| p.get_name()).collect();
+        let mut path_components: Vec<String> = Vec::new();
+        let mut parent: Option<Item> = Some(self.clone());
+
+        while parent.is_some() {
+            path_components.push(self.get_name(false)?);
+            parent = parent.unwrap().get_parent_item();
+        }
+
         path_components.pop();
         path_components.reverse();
 
-        "\\".to_string() + &path_components.join("\\")
+        Ok("\\".to_string() + &path_components.join("\\"))
     }
 
     pub fn add_to_report_table<S: AsRef<str>>(&self, name: S, flags: AddReportTableFlags) {

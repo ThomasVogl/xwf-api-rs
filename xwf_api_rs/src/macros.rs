@@ -5,35 +5,31 @@ macro_rules! export_xt_init {
         #[no_mangle]
         #[allow(non_snake_case, unused_variables)]
         pub extern "C"  fn XT_Init(nVersion: DWORD, nFlags: DWORD, hMainWnd: HANDLE, lpReserved: PVOID) -> LONG {
-            
+
+            let lic_info = XtLicenseInfo {};
+            let xt_version = XtVersion::try_from(nVersion).unwrap();
+            let flags = XtInitFlags::from_bits_truncate(nFlags);
+            let window = $crate::window::Window::new(hMainWnd);
+
+
+            let context = ExecutionContext::create(xt_version, flags, lic_info, window);
+            if context.is_err() {
+                $crate::xwferror!("Could not create ExecutionContext: {}", context.err().unwrap());
+                return XtInitReturn::PreventFurtherUseOfDll as i32;
+            }
+
+
             unsafe {
-                $variable = Some(<$variable_type>::create());
+                $variable = Some(<$variable_type>::create(context.unwrap()));
             }
 
             $crate::xwfdebug!("XT_Init called");
 
-            let result_version_check = XtVersion::try_from(nVersion).and_then(|v| $crate::util::check_supported_xwf_version(v));
-
-            match result_version_check {
-                Ok(_) => { $crate::xwfinfo!("X-Tension API version check successful") },
-                Err(e) => {
-                    $crate::xwferror!("X-Tension API version check failed: {}", e);
-                    return XtInitReturn::PreventFurtherUseOfDll as i32;
-                }
-            }
-
-            let flags = XtInitFlags::from_bits_truncate(nFlags);
-
-
             $crate::xwfinfo!("X-Tension \"{}\" Version {} started", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION") );
-            $crate::xwfinfo!("powered by rust-lang binding xwf-api-rs (https://github.com/ThomasVogl/xwf-api-rs)");
+            $crate::xwfinfo!("powered by xwf-api-rs library version 2 (https://github.com/ThomasVogl/xwf-api-rs)");
 
 
-            let res = $crate::get_lib_instance!($variable, $variable_type).xt_init(
-                XtVersion::try_from(nVersion).unwrap(),
-                flags,
-                $crate::window::Window::new(hMainWnd), XtLicenseInfo {}
-            );
+            let res = $crate::get_lib_instance!($variable, $variable_type).xt_init();
 
 
             match res {
@@ -111,16 +107,21 @@ macro_rules! export_xt_prepare {
         ) -> LONG {
             $crate::xwfdebug!("XT_Prepare called");
 
-            let opt_op_type = XtPrepareOpType::try_from(nOpType);
-            if opt_op_type.is_err() {
+            let res_op_type = XtOpType::try_from(nOpType);
+            if res_op_type.is_err() {
                 $crate::xwferror!("error in parsing nOpType argument");
                 return XtPrepareReturn::Negative(XtPrepareNegativeReturn::JustCallXtFinalize).into();
             }
 
-            let res = $crate::get_lib_instance!($variable, $variable_type).xt_prepare(
-                $crate::volume::Volume::new(hVolume).ok(),
+            let ctx = $crate::get_lib_instance!($variable, $variable_type).get_context_mut();
+
+            ctx.set(
                 $crate::evidence::Evidence::new(hEvidence),
-                opt_op_type.unwrap());
+                $crate::volume::Volume::new(hVolume).ok(),
+                res_op_type.ok()
+            );
+
+            let res = $crate::get_lib_instance!($variable, $variable_type).xt_prepare();
 
             match res {
                 Ok(ret) => ret.into(),
@@ -141,19 +142,26 @@ macro_rules! export_xt_finalize {
         pub extern "C" fn XT_Finalize(hVolume: HANDLE, hEvidence: HANDLE,  nOpType: DWORD, lpReserved: PVOID
         ) -> LONG {
             $crate::xwfdebug!("XT_Finalize called");
-            let opt_op_type = XtPrepareOpType::try_from(nOpType);
-            if opt_op_type.is_err() {
+            let res_op_type = XtOpType::try_from(nOpType);
+            if res_op_type.is_err() {
                 $crate::xwferror!("error in parsing nOpType argument");
                 return XtFinalizeReturn::Ok.into();
             }
 
-            let res = $crate::get_lib_instance!($variable, $variable_type).xt_finalize(
-                $crate::volume::Volume::new(hVolume).ok(),
+            let ctx = $crate::get_lib_instance!($variable, $variable_type).get_context_mut();
+            ctx.set(
                 $crate::evidence::Evidence::new(hEvidence),
-                opt_op_type.unwrap());
+                $crate::volume::Volume::new(hVolume).ok(),
+                res_op_type.ok()
+            );
 
+            let res = $crate::get_lib_instance!($variable, $variable_type).xt_finalize();
             match res {
-                Ok(ret) => ret.into(),
+                Ok(ret) => {
+                    let ctx = $crate::get_lib_instance!($variable, $variable_type).get_context_mut();
+                    ctx.reset();
+                    ret.into()
+                },
                 Err(e) => {
                     $crate::xwferror!("XT_Finalize: {}", e);
                     XtPrepareNegativeReturn::JustCallXtFinalize.into()

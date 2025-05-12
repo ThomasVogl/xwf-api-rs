@@ -1,7 +1,8 @@
 use std::fs;
 use std::path::{Path, PathBuf};
-use xwf_api_rs::{xwferror, xwf_types::*, traits::XTension, error::XwfError, window::Window, evidence::Evidence, volume::Volume, export_all_functions_ex};
+use xwf_api_rs::{xwferror, xwf_types::*, traits::XTension, error::XwfError, export_all_functions_ex};
 use xwf_api_rs::case::Case;
+use xwf_api_rs::context::ExecutionContext;
 use xwf_api_rs::item::{ItemHandle};
 use xwf_api_rs::volume::HashType;
 
@@ -15,8 +16,7 @@ fn workload() {
 // define a custom structure representing your extension
 // could also have attributes of course
 pub struct MultiThreadXtension {
-    current_evidence: Option<Evidence>,
-    current_volume: Option<Volume>,
+    context: ExecutionContext,
     current_output_path: Option<PathBuf>
 }
 
@@ -28,32 +28,34 @@ impl XTension for MultiThreadXtension {
     type XTensionError = XwfError;
 
     // function to create an instance of your XTension struct
-    fn create() -> MultiThreadXtension {
+    fn create(context: ExecutionContext) -> MultiThreadXtension {
         MultiThreadXtension {
-            current_evidence: None,
-            current_volume: None,
+            context,
             current_output_path: None
         }
     }
 
-    //function to initialize the X-Tension. Wraps XT_Init() Function from C API
-    fn xt_init(&mut self, _version: XtVersion, _: XtInitFlags, _: Option<Window>, _: XtLicenseInfo) -> Result<XtInitReturn, Self::XTensionError> {
+    fn get_context_mut(&mut self) -> &mut ExecutionContext {
+        &mut self.context
+    }
 
+    fn get_context(&self) -> &ExecutionContext {
+        &self.context
+    }
+
+    //function to initialize the X-Tension. Wraps XT_Init() Function from C API
+    fn xt_init(&mut self) -> Result<XtInitReturn, Self::XTensionError> {
         Ok(XtInitReturn::RunMultiThreaded)
     }
 
     //prepare function wraps XT_Prepare() Function from C API
     //please refer to X-Ways X-Tension API doc for details regarding calling logic
-    fn xt_prepare(&mut self, volume: Option<Volume>, evidence: Option<Evidence>, op_type: XtPrepareOpType) -> Result<XtPrepareReturn, Self::XTensionError> {
-
-        // store current evidence and volume as we need this during xt_process_item_ex() function...
-        self.current_volume = volume;
-        self.current_evidence = evidence;
+    fn xt_prepare(&mut self) -> Result<XtPrepareReturn, Self::XTensionError> {
 
         // compute current output path based on case directory by using X-Tension name and current evidence name
         let case_infos = Case::get_case_infos()?;
         let mut output_path = Path::new(&case_infos.dir).join(env!("CARGO_PKG_NAME"));
-        if let Some(ev) = &self.current_evidence {
+        if let Some(ev) = self.context.get_evidence() {
             output_path = output_path.join(ev.get_name()?);
         }
         self.current_output_path = Some(output_path);
@@ -64,8 +66,9 @@ impl XTension for MultiThreadXtension {
         }
 
 
+
         // do not do anything if not called via volume snapshot refinement or directory browser context menu
-        if op_type != XtPrepareOpType::ActionVolumeSnapshotRefinement && op_type != XtPrepareOpType::DirectoryBrowserContextMenu {
+        if !self.context.is_supported_operation(&[XtOpType::ActionVolumeSnapshotRefinement, XtOpType::DirectoryBrowserContextMenu]) {
             xwferror!("Operation Mode not supported. Please run the plugin via volume snapshot refinement \
             or via context menu of directory browser");
             return Ok(XtPrepareReturn::Negative(XtPrepareNegativeReturn::JustCallXtFinalize));
@@ -79,9 +82,7 @@ impl XTension for MultiThreadXtension {
     }
 
     fn xt_process_item_ex(&mut self, _handle: ItemHandle) -> Result<XtProcessItemExReturn, Self::XTensionError> {
-        let _vol = self.current_volume.as_ref().unwrap();
-        let ev = self.current_evidence.as_ref().unwrap();
-        let uid = _handle.item().unique_id(ev);
+        let uid = _handle.item().unique_id(self.context.get_evidence().unwrap());
 
         let _hash = _handle.item().get_hash_value(HashType::MD5, false).unwrap_or(Vec::new());
         let p = Path::new(self.current_output_path.as_ref().unwrap()).join(uid.to_string());
@@ -94,9 +95,7 @@ impl XTension for MultiThreadXtension {
 
     }
 
-    fn xt_finalize(&mut self, _volume: Option<Volume>, _evidence: Option<Evidence>, _op_type: XtPrepareOpType) -> Result<XtFinalizeReturn, Self::XTensionError> {
-        self.current_volume = None;
-        self.current_evidence = None;
+    fn xt_finalize(&mut self) -> Result<XtFinalizeReturn, Self::XTensionError> {
         self.current_output_path = None;
 
         Ok(XtFinalizeReturn::Ok)

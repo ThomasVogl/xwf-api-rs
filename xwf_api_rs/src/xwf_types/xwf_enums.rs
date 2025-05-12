@@ -90,7 +90,7 @@ pub enum EvObjPropType {
 
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum XtPrepareOpType {
+pub enum XtOpType {
     ActionRun                       = 0, // simply run directly from the main menu or command line3
     ActionVolumeSnapshotRefinement  = 1, // volume snapshot refinement starting2
     ActionLogicalSearch             = 2, // logical simultaneous search starting
@@ -146,7 +146,7 @@ pub enum XtFinalizeReturn {
     Ok = 0
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct XtVersion {
     pub major: u16,
     pub minor: u16,
