@@ -586,7 +586,7 @@ impl Item {
         let param = if replace {0x0} else {0x2};
 
         let success = (get_raw_api!().add_comment)(self.item_id, wstring.as_ptr() as LPWSTR, param);
-        if success == true as i32 {
+        if success > 0 {
             Ok(())
         } else {
             Err(XwfError::XwfFunctionCallFailed("add_comment"))
