@@ -64,7 +64,7 @@ impl XTension for CountItemsXTension {
         if op_type == XtPrepareOpType::ActionRun {
             let categories:Vec<FileTypeCategory> = Case::iterate(|i| self.get_item_category(i))?
                 .iter()
-                .filter_map(|&c| c ).collect();
+                .filter_map(|c| c.clone() ).collect();
 
             let num_videos = categories.iter().filter(|&c| *c == FileTypeCategory::Video).count();
             let num_images = categories.iter().clone().filter(|&c| *c == FileTypeCategory::Picture).count();
