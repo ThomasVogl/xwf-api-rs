@@ -344,6 +344,12 @@ impl Item {
         ItemInfoDeletion::try_from(result)
     }
 
+
+    pub fn get_item_info_coloranalysis(&self) -> Result<ItemInfoColorAnalysis, XwfError> {
+        let result = self.get_item_info(XwfItemInfoTypes::ColorAnalysis)?;
+        ItemInfoColorAnalysis::try_from(result)
+    }
+
     pub fn get_item_info_flags(&self) -> Result<ItemInfoFlags, XwfError> {
         let result = self.get_item_info(XwfItemInfoTypes::Flags)?;
         Ok(ItemInfoFlags::from_bits_truncate(result as u64))
