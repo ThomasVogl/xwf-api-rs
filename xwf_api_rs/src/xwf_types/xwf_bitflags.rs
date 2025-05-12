@@ -48,7 +48,7 @@ bitflags! {
     }
 
 
-
+    #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy)]
     pub struct ItemInfoAttributes: i64 {
         const WinAttrReadOnly           = 0x00000001; //Windows attribute read only
         const WinAttrHidden             = 0x00000002; //Windows attribute hidden
