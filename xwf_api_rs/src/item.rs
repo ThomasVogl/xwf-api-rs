@@ -599,6 +599,18 @@ impl Item {
 
     }
 
+    pub fn add_comment(&self, comment: &String, replace: bool) -> Result<(), XwfError>  {
+        let wstring = WString::from_str(comment);
+        let param = if replace {0x0} else {0x2};
+
+        let success = (get_raw_api!().add_comment)(self.item_id, wstring.as_ptr() as LPWSTR, param);
+        if success == true as i32 {
+            Ok(())
+        } else {
+            Err(XwfError::XwfFunctionCallFailed("add_comment"))
+        }
+    }
+
     pub fn get_item_offset(&self) -> Option<(i64, i64)>{
         let mut def_ofs = 0i64;
         let mut start_sector = 0i64;

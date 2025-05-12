@@ -279,6 +279,13 @@ pub type FnXwfGetComment = extern "stdcall" fn(
     nItemID: LONG ,
 ) -> LPWSTR;
 
+#[allow(non_snake_case, unused_variables)]
+pub type FnXwfAddComment = extern "stdcall" fn(
+    nItemID: LONG ,
+    lpComment: LPWSTR,
+    nFlagsHowToAdd: DWORD,
+) -> BOOL;
+
 
 #[allow(non_snake_case, unused_variables)]
 pub type FnXwfCreateFile = extern "stdcall" fn(
