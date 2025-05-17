@@ -436,6 +436,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "xt-multithreading-test-rs"
+version = "0.0.1"
+dependencies = [
+ "xwf-api-rs",
+]
+
+[[package]]
 name = "xt-process-data-rs"
 version = "0.0.1"
 dependencies = [
@@ -444,7 +451,7 @@ dependencies = [
 
 [[package]]
 name = "xwf-api-rs"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "bitflags",
  "chrono",

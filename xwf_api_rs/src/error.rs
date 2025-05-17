@@ -26,6 +26,16 @@ pub enum XwfError {
 }
 
 
+impl XwfError {
+    pub fn is_buffer_too_small(&self) -> bool {
+        match self {
+            XwfError::GivenBufferToSmallForContent => { true }
+            _ => { false }
+        }
+    }
+}
+
+
 impl Display for XwfError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {

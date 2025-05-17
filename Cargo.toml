@@ -5,5 +5,6 @@ members = [
     "examples/xt-helloworld-rs",
     "examples/xt-count-items-rs",
     "examples/xt-process-data-rs",
-    "examples/xt-item-parser-rs"
+    "examples/xt-item-parser-rs",
+    "examples/xt-multithreading-test-rs"
 ]
