@@ -544,13 +544,13 @@ impl Item {
     fn get_hash_sets_internal(&self, buf_size: usize) -> Result<Vec<String>, XwfError> {
         let mut buf: Vec<u16> = Vec::new();
         buf.resize(buf_size, 0);
-        let num_assocs = (get_raw_api!().get_hashset_assocs)(self.item_id, buf.as_mut_ptr(), buf.len() as i32);
+        let expected_num_assocs = (get_raw_api!().get_hashset_assocs)(self.item_id, buf.as_mut_ptr(), buf.len() as i32);
 
-        if num_assocs < 0 {
+        if expected_num_assocs < 0 {
             return Err(XwfError::XwfFunctionCallFailed("get_hashset_assocs"));
         }
 
-        if num_assocs == 0 {
+        if expected_num_assocs == 0 {
             return Ok(Vec::new());
         }
 
@@ -561,13 +561,12 @@ impl Item {
 
         } else {
             let vec_assocs: Vec<String> = assocs.split(", ").map(|s| String::from_str(s).unwrap()).collect();
-            if vec_assocs.len() != num_assocs as usize {
+            if vec_assocs.len() < expected_num_assocs as usize {
                 Err(XwfError::GivenBufferToSmallForContent)
             } else {
                 Ok(vec_assocs)
             }
         }
-
     }
 
     pub fn get_comment(&self) -> Option<String>  {
