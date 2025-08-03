@@ -53,16 +53,25 @@ impl XTension for HelloWorldXTension {
         }
 
         //request a string input from user, use default string if nothing entered
-        let title = Application::get_user_input_str("enter a title".to_string(), true)
-            .or(Some("HelloWorld".to_string())).unwrap();
+        let title = loop {
+            match Application::get_user_input_str("enter a title".to_string(), Some("Hello World".to_owned()),true) {
+                None => continue,
+                Some(v) => break v,
+            }
+        };
+
 
         //show progress bar
         Application::show_progress(title, ProgressFlags::empty());
 
 
-        //request integer number from user and compute number of rounds
-        let num_rounds = (Application::get_user_input_integer("seconds to run".to_string())
-            .or(Some(1000)).unwrap()*100) as u32;
+        let num_rounds: u32 = loop {
+            match Application::get_user_input("seconds to run".to_owned(), Some(10u32)) {
+                Some(v) => break v*100,
+                None => continue,
+            }
+        };
+
 
         //iterate over number of rounds
         for i in 0..num_rounds as u32 {

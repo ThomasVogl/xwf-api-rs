@@ -12,8 +12,8 @@ pub struct ExecutionContext {
     volume: Option<Volume>,
     operation_type: Option<XtOpType>,
 
-    version: XtVersion,
-    flags: XtInitFlags,
+    pub version: XtVersion,
+    pub flags: XtInitFlags,
     pub license_info: XtLicenseInfo,
     pub window: Option<Window>,
 }

@@ -15,13 +15,13 @@ bitflags = { version = "2.8.0", features = ["serde"] }
 chrono = {  version = "0.4.39", features = ["serde"] }
 serde = { version = "1.0.217", features = ["derive"] }
 regex = "1.11.1"
-winsafe = { version = "0.0.22", features = ["kernel"]}
+winsafe = { version = "0.0.25", features = ["kernel"]}
 
 [lib]
 crate-type = ["lib"]
 
 [features]
-default = [ "api_20_9" ]
+default = [ "api_20_3" ]
 api_21_6 = [ "api_21_5" ]
 api_21_5 = [ "api_21_4" ]
 api_21_4 = [ "api_21_3" ]

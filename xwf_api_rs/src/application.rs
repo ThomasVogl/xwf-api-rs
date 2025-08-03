@@ -1,9 +1,8 @@
-use std::ptr::null_mut;
+use std::str::FromStr;
 use winapi::shared::ntdef::LPWSTR;
 use crate::get_raw_api;
 use crate::xwf_types::*;
 use crate::raw_api::RAW_API;
-
 use crate::error::XwfError;
 
 
@@ -36,19 +35,32 @@ impl Application {
         Self::output_string(msg, OutputMessageFlags::empty());
     }
 
-    pub fn get_user_input_integer<S: AsRef<str>>(msg: S)-> Option<u64> {
-        let ret = (get_raw_api!().get_user_input)(unsafe { winsafe::WString::from_str(&msg).as_mut_ptr() }, null_mut(), 0, 0x1);
-        if ret < 0 {
-            None
-        } else {
-            Some(ret as u64)
+    pub fn get_user_input<S: AsRef<str>, T: FromStr + ToString >(msg: S, default_value: Option<T>)-> Option<T> {
+
+        let user_input = Self::get_user_input_str(msg, default_value.map(|v| v.to_string()), true);
+        match user_input {
+            None => { None },
+            Some(user_input) => {
+                T::from_str(&user_input).ok()
+            }
         }
     }
 
-    pub fn get_user_input_str<S: AsRef<str>>(msg: S, allow_empty: bool) -> Option<String> {
+    pub fn get_user_input_str<S: AsRef<str>>(msg: S, default_value: Option<String>, allow_empty: bool) -> Option<String> {
         let flags = if allow_empty {0x2} else {0x0};
         let mut s = winsafe::WString::new_alloc_buf(65535);
-        let ret: i64 =  (get_raw_api!().get_user_input)(winsafe::WString::from_str(msg).as_ptr() as LPWSTR , unsafe {s.as_mut_ptr()},  s.buf_len() as u32, flags);
+        if default_value.is_some() {
+            let default_string = winsafe::WString::from_str(default_value.unwrap());
+            if default_string.str_len() <= s.buf_len() {
+                default_string.copy_to_slice(s.as_mut_slice());
+            }
+        }
+
+        let ret: i64 =  (get_raw_api!().get_user_input)(
+            winsafe::WString::from_str(msg).as_ptr() as LPWSTR ,
+            unsafe {s.as_mut_ptr()},
+            s.buf_len() as u32,
+            flags);
         if ret > 0 {
             Some(s.to_string())
         } else {
