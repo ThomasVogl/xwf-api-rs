@@ -834,7 +834,7 @@ impl ItemHandle {
     }
 }
 
-impl Drop for ItemHandle{
+impl Drop for ItemHandle {
     fn drop(&mut self) {
         if self.shall_close {
             (get_raw_api!().close)(self.item_handle)

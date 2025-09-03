@@ -159,7 +159,7 @@ macro_rules! export_xt_finalize {
             match res {
                 Ok(ret) => {
                     let ctx = $crate::get_lib_instance!($variable, $variable_type).get_context_mut();
-                    ctx.reset();
+                    ctx.reset_volume_evidence();
                     ret.into()
                 },
                 Err(e) => {

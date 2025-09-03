@@ -54,6 +54,11 @@ impl ExecutionContext {
         self.operation_type = None;
     }
 
+    pub fn reset_volume_evidence(&mut self) {
+        self.evidence = None;
+        self.volume = None;
+    }
+
     pub fn get_evidence(&self) -> Option<&Evidence> {
         self.evidence.as_ref()
     }
