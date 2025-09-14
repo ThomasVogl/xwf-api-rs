@@ -167,7 +167,7 @@ pub enum FileFormatConsistency {
     UnknownEnumValue    = 255,
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone, Copy, PartialOrd, Ord)]
 pub enum ItemInfoDeletion {
     Existing                    = 0,   //existing
     PossiblyReverable           = 1,   //previously existing, possibly recoverable
@@ -262,3 +262,165 @@ pub enum VolumeNameType {
     LONG =   1
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord)]
+pub enum StorageLocationType {
+    UserSpace                   =0,
+    OtherLocation               =1,
+    Thumbnail                   =2,
+    TemporaryOrCache            =3,
+    TrashBin                    =4,
+    ApplicationOrSystem         =5,
+}
+
+impl StorageLocationType {
+    pub(crate) fn new(name: &str, path: &str) -> StorageLocationType {
+        let p_lower = path.to_lowercase() + "\\" + &*name.to_lowercase();
+
+        if regex_static::static_regex!(r"\\.?recycle.*").is_match(&p_lower)
+            || regex_static::static_regex!(r".*\\.?trash.*").is_match(&p_lower)
+            || regex_static::static_regex!(r".*\\found.?[0-9]+\\.*").is_match(&p_lower)
+            || p_lower.contains("lost+found")
+        {
+            return StorageLocationType::TrashBin;
+        }
+
+        if p_lower.starts_with(r"\windows\")
+            || p_lower.starts_with(r"\windows.old\")
+            || p_lower.starts_with(r"\program files\")
+            || p_lower.starts_with(r"\program files (x86)\")
+            || p_lower.starts_with(r"\programdata\")
+            || p_lower.starts_with(r"\steam\")
+            || p_lower.starts_with(r"\steamapps\")
+            || p_lower.starts_with(r"\usr\")
+            || p_lower.starts_with(r"\bin\")
+            || p_lower.starts_with(r"\var\lib\")
+            || p_lower.starts_with(r"\dev\")
+            || p_lower.starts_with(r"\proc\")
+            || p_lower.contains(r"\system\")
+            || p_lower.contains(r"\library\")
+            || p_lower.contains(r"\applications\")
+            || p_lower.contains(r"\res\")
+            || regex_static::static_regex!(r".*resources?\\.*").is_match(&p_lower)
+            || regex_static::static_regex!(r".*assets?\\.*").is_match(&p_lower)
+        {
+            return StorageLocationType::ApplicationOrSystem;
+        }
+
+        if regex_static::static_regex!(r".*\\thumb.+\.db.*").is_match(&p_lower)
+        || regex_static::static_regex!(r".*thumbnail.*").is_match(&p_lower)
+        {
+            return StorageLocationType::Thumbnail;
+        }
+
+        if regex_static::static_regex!(r".*\\te?mp.*").is_match(&p_lower)
+        || regex_static::static_regex!(r".*cache\\.*").is_match(&p_lower)
+        || regex_static::static_regex!(r".*\\appdata\\roaming\\.*").is_match(&p_lower)
+        || regex_static::static_regex!(r".*\\appdata\\local\\.*").is_match(&p_lower)
+        || regex_static::static_regex!(r".*\\appdata\\locallow\\.*").is_match(&p_lower)
+
+        {
+            return StorageLocationType::TemporaryOrCache;
+        }
+
+
+        if p_lower.starts_with(r"\users\")
+            || p_lower.starts_with(r"\user\")
+            || p_lower.starts_with(r"\benutzer\")
+            || p_lower.starts_with(r"\home\")
+            || p_lower.contains(r"\dcim\")
+            || p_lower.contains(r"\camera\")
+            || p_lower.contains(r"\dropbox\")
+            || p_lower.contains(r"\onedrive\")
+            || p_lower.contains(r"\desktop\")
+            || p_lower.contains(r"\schreibtisch\")
+            || regex_static::static_regex!(r".*\\mega.?(nz)?\\.*").is_match(&p_lower)
+            || regex_static::static_regex!(r".*\\google\s?drive\\.*").is_match(&p_lower)
+            || regex_static::static_regex!(r".*\\pictures?\\.*").is_match(&p_lower)
+            || regex_static::static_regex!(r".*\\musi[ck]?\\.*").is_match(&p_lower)
+            || regex_static::static_regex!(r".*\\audio\\.*").is_match(&p_lower)
+            || regex_static::static_regex!(r".*\\(f|ph)otos?\\.*").is_match(&p_lower)
+            || regex_static::static_regex!(r".*\\videos?\\.*").is_match(&p_lower)
+            || regex_static::static_regex!(r".*\\movie?\\.*").is_match(&p_lower)
+            || regex_static::static_regex!(r".*\\record(ings|ing|s)?\\.*").is_match(&p_lower)
+            || regex_static::static_regex!(r".*\\downloads?\\.*").is_match(&p_lower)
+            || regex_static::static_regex!(r".*\\screen\s?(shot|record|capture).*").is_match(&p_lower)
+            || regex_static::static_regex!(r".*\\screen\s?recordings?\\.*").is_match(&p_lower)
+            || regex_static::static_regex!(r".*\\screen\s?captures?\\.*").is_match(&p_lower)
+            || regex_static::static_regex!(r".*\\do[ck]ument[es]\\.*").is_match(&p_lower)
+            || regex_static::static_regex!(r".*\\proje[ck]t[es]\\.*").is_match(&p_lower)
+            || regex_static::static_regex!(r".*\\[0-9]+apple\\.*").is_match(&p_lower)
+            || p_lower.contains(r"aufnahme")
+            || p_lower.contains(r"bildschirm")
+            || p_lower.contains(r"bilder")
+            || p_lower.contains(r"filme")
+            || p_lower.contains(r"serien")
+            || p_lower.contains(r"spiele")
+            || p_lower.contains(r"arbeit")
+            || p_lower.contains(r"familie")
+            || p_lower.contains(r"privat")
+            || p_lower.contains(r"sammlung")
+            || p_lower.contains(r"urlaub")
+            || p_lower.contains(r"reisen")
+            || p_lower.contains(r"feier")
+            || p_lower.contains(r"album")
+            || p_lower.contains(r"porn")
+            || p_lower.contains(r"whatsapp")
+            || p_lower.contains(r"telegram")
+        {
+            return StorageLocationType::UserSpace;
+        }
+
+
+        StorageLocationType::OtherLocation
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_paths() {
+        assert_eq!(StorageLocationType::new("2020_12_24_10_32_51.thumbnail", r"\filesystem2\mobile\Containers\Data\Application\F7F7510A-5D3E-4A6D-9062-DFC594D17034\Documents\videoCache"),
+            StorageLocationType::Thumbnail);
+
+
+        assert_eq!(StorageLocationType::new("63969157981__DD4550B6-55C6-459A-9B97-86A7B9EB24C9.largeThumbnail", r"\filesystem2\mobile\Containers\Data\Application\B140F93B-1639-4A09-9FCB-2C1E9C34D6CE\tmp"),
+                   StorageLocationType::Thumbnail);
+
+        assert_eq!(StorageLocationType::new("0C8E427FC5CB7186DB4F869D1583D82D", r"\filesystem2\mobile\Containers\Data\Application\F7F7510A-5D3E-4A6D-9062-DFC594D17034\Documents\.mediaLibrary.Cache\Thumbnail"),
+                   StorageLocationType::Thumbnail);
+
+        assert_eq!(StorageLocationType::new("64.png",r"\Users\borch\AppData\Local\Google\Chrome\User Data\Default\Web Applications\Manifest Resources\kefjledonklijopmnomlcbpllchaibag\Icons"),
+                   StorageLocationType::ApplicationOrSystem);
+
+
+        assert_eq!(StorageLocationType::new("f_000098",r"\Users\borch\AppData\Local\Google\Chrome\User Data\Profile 2\Cache\Cache_Data"),
+                   StorageLocationType::TemporaryOrCache);
+
+        assert_eq!(StorageLocationType::new("tray-connected.png",r"\Users\borch\AppData\Roaming\discord"),
+                   StorageLocationType::TemporaryOrCache);
+
+
+        assert_eq!(StorageLocationType::new("AppList.targetsize-64.png",r"\Users\borch\Downloads\PLAY_STORE_W11_TRD.rar\PLAY_STORE_W11_TRD\Images"),
+                   StorageLocationType::UserSpace);
+
+        assert_eq!(StorageLocationType::new("close_list.png",r"\Program Files (x86)\CyberLink\PowerDVD12\Custom\Skin\Standard\Photo\Media.zip\media\albumlist"),
+                   StorageLocationType::ApplicationOrSystem);
+
+
+        assert_eq!(StorageLocationType::new("IMG_0247.JPG",r"\filesystem2\mobile\Media\DCIM\100APPLE"),
+                   StorageLocationType::UserSpace);
+
+        assert_eq!(StorageLocationType::new("xxx.png",r"\Users\Tim\Dokumente"),
+                   StorageLocationType::UserSpace);
+
+        assert_eq!(StorageLocationType::new("xxx.mov",r"\backup\data\spielfilme"),
+                   StorageLocationType::UserSpace);
+
+        assert_eq!(StorageLocationType::new("xxx.png","\\mega"),
+                   StorageLocationType::UserSpace);
+
+    }
+}

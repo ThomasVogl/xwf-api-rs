@@ -12,6 +12,7 @@ pub mod raw_api;
 pub mod xwf_types;
 pub mod xwf_function_types;
 pub mod context;
+mod itemattributes;
 
 // inherit packages
 pub use chrono;

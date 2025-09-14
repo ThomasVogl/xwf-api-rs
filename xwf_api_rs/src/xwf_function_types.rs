@@ -6,16 +6,16 @@ type LPINT64 = *mut i64;
 
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfOutputMessage = extern "stdcall" fn(lpMessage: *const WCHAR, nFlags: DWORD);
+pub type FnXwfOutputMessage = extern "system" fn(lpMessage: *const WCHAR, nFlags: DWORD);
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfGetVolumeName = extern "stdcall" fn(
+pub type FnXwfGetVolumeName = extern "system" fn(
     hVolume: HANDLE,
     lpString: LPWSTR,
     nType: DWORD);
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfGetVolumeInformation = extern "stdcall" fn(
+pub type FnXwfGetVolumeInformation = extern "system" fn(
     hVolume: HANDLE,
     lpFileSystem: LPLONG,
     nBytesPerSector: *mut DWORD,
@@ -25,7 +25,7 @@ pub type FnXwfGetVolumeInformation = extern "stdcall" fn(
 ) -> BOOL;
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfRead = extern "stdcall" fn(
+pub type FnXwfRead = extern "system" fn(
     hVolumeOrItem: HANDLE,
     nOffset: __int64,
     lpBuffer: *mut BYTE,
@@ -33,53 +33,53 @@ pub type FnXwfRead = extern "stdcall" fn(
 ) -> DWORD;
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfGetItemSize = extern "stdcall" fn(
+pub type FnXwfGetItemSize = extern "system" fn(
     nItemID: LONG,
 ) -> __int64;
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfGetItemInformation = extern "stdcall" fn(
+pub type FnXwfGetItemInformation = extern "system" fn(
     nItemID: LONG,
     nInfoType: LONG,
     lpSuccess: LPBOOL
 ) -> __int64;
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfSetItemInformation = extern "stdcall" fn(
+pub type FnXwfSetItemInformation = extern "system" fn(
     nItemID: LONG,
     nInfoType: LONG,
     nInfoValue: __int64
 ) -> BOOL;
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfGetItemType = extern "stdcall" fn(
+pub type FnXwfGetItemType = extern "system" fn(
     nItemId: LONG,
     lpTypeDescr: LPWSTR,
     nBufferLenAndFlags: DWORD
 ) -> LONG;
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfSetItemType = extern "stdcall" fn(
+pub type FnXwfSetItemType = extern "system" fn(
     lpTypeDescr: LPWCH,
     nTypeStatus: LONG
 );
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfGetItemParent = extern "stdcall" fn(
+pub type FnXwfGetItemParent = extern "system" fn(
     nItemID: LONG
 ) -> LONG;
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfGetNextEvObj = extern "stdcall" fn(
+pub type FnXwfGetNextEvObj = extern "system" fn(
     hPrevEvidence: HANDLE,
     pReserved: LPVOID) -> HANDLE;
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfGetFirstEvObj = extern "stdcall" fn(
+pub type FnXwfGetFirstEvObj = extern "system" fn(
     pReserved: LPVOID) -> HANDLE;
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfGetCaseProp = extern "stdcall" fn(
+pub type FnXwfGetCaseProp = extern "system" fn(
     pReserved: LPVOID ,
     nPropType: LONG,
     pBuffer: LPVOID,
@@ -88,7 +88,7 @@ pub type FnXwfGetCaseProp = extern "stdcall" fn(
 
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfGetEvObjProp = extern "stdcall" fn(
+pub type FnXwfGetEvObjProp = extern "system" fn(
     hEvidence: HANDLE,
     nPropType: DWORD,
     pBuffer: PVOID,
@@ -96,12 +96,12 @@ pub type FnXwfGetEvObjProp = extern "stdcall" fn(
 
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfGetEvObj = extern "stdcall" fn(
+pub type FnXwfGetEvObj = extern "system" fn(
     nEvObjID: DWORD
 ) -> HANDLE;
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfGetReportTableInfo = extern "stdcall" fn(
+pub type FnXwfGetReportTableInfo = extern "system" fn(
     pReserved: LPVOID,
     nReportTableID: LONG,
     lpOptional: PLONG
@@ -109,14 +109,14 @@ pub type FnXwfGetReportTableInfo = extern "stdcall" fn(
 
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfGetReportTableAssocs = extern "stdcall" fn(
+pub type FnXwfGetReportTableAssocs = extern "system" fn(
     nItemID: LONG,
     lpBuffer: LPWSTR,
     nBufferLen: LONG
 ) -> DWORD;
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfGetHashSetAssocs = extern "stdcall" fn(
+pub type FnXwfGetHashSetAssocs = extern "system" fn(
     nItemID: LONG,
     lpBuffer: LPWSTR,
     nBufferLen: LONG,
@@ -125,7 +125,7 @@ pub type FnXwfGetHashSetAssocs = extern "stdcall" fn(
 
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfGetEvObjReportTableAssocs = extern "stdcall" fn(
+pub type FnXwfGetEvObjReportTableAssocs = extern "system" fn(
     hEvidence: HANDLE,
     nFlags: LONG,
     lpValue: PLONG
@@ -133,47 +133,47 @@ pub type FnXwfGetEvObjReportTableAssocs = extern "stdcall" fn(
 
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfOpenEvObj = extern "stdcall" fn(
+pub type FnXwfOpenEvObj = extern "system" fn(
     hEvidence: HANDLE,
     nFlags: DWORD
 ) -> HANDLE;
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfAddToReportTable = extern "stdcall" fn(
+pub type FnXwfAddToReportTable = extern "system" fn(
     nItemID: LONG,
     lpReportTableName: LPWSTR,
     nFlags: DWORD
 ) -> LONG;
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfGetHashValue = extern "stdcall" fn(
+pub type FnXwfGetHashValue = extern "system" fn(
     nItemID: LONG,
     lpBuffer: LPVOID
 ) -> BOOL;
 
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfSetHashValue = extern "stdcall" fn(
+pub type FnXwfSetHashValue = extern "system" fn(
     nItemID: LONG,
     lpHash: LPVOID,
     nParam: DWORD
 ) -> BOOL;
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfShowProgress = extern "stdcall" fn(
+pub type FnXwfShowProgress = extern "system" fn(
     lpCaption: LPWSTR,
     nFlags: DWORD,
 );
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfOpenItem = extern "stdcall" fn(
+pub type FnXwfOpenItem = extern "system" fn(
     hVolume: HANDLE,
     nItemID: LONG,
     nFlags: DWORD,
 ) -> HANDLE;
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfGetVsprop = extern "stdcall" fn(
+pub type FnXwfGetVsprop = extern "system" fn(
     nPropType: LONG,
     pBuffer: PVOID,
 ) -> __int64;
@@ -181,64 +181,64 @@ pub type FnXwfGetVsprop = extern "stdcall" fn(
 
 #[cfg(feature="api_20_9")]
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfSelectVolumeSnapshot = extern "stdcall" fn(
+pub type FnXwfSelectVolumeSnapshot = extern "system" fn(
     hVolume: HANDLE,
 ) -> LONG;
 
 #[cfg(not(feature="api_20_9"))]
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfSelectVolumeSnapshot = extern "stdcall" fn(
+pub type FnXwfSelectVolumeSnapshot = extern "system" fn(
     hVolume: HANDLE,
 );
 
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfGetItemName = extern "stdcall" fn(
+pub type FnXwfGetItemName = extern "system" fn(
     nItemID: DWORD
 ) -> LPWSTR;
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfGetItemCount = extern "stdcall" fn(
+pub type FnXwfGetItemCount = extern "system" fn(
     pTarget: LPVOID
 ) -> DWORD;
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfGetProp = extern "stdcall" fn(
+pub type FnXwfGetProp = extern "system" fn(
     hVolumeOrItem: HANDLE,
     nPropType: DWORD ,
     lpBuffer: PVOID,
 ) -> __int64;
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfCloseEvObj = extern "stdcall" fn(
+pub type FnXwfCloseEvObj = extern "system" fn(
     hEvidence: HANDLE,
 );
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfClose = extern "stdcall" fn(
+pub type FnXwfClose = extern "system" fn(
     hVolumeOrItem: HANDLE,
 );
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfSetProgressDescription = extern "stdcall" fn(
+pub type FnXwfSetProgressDescription = extern "system" fn(
     lpStr: LPWSTR,
 );
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfSetProgressPercentage = extern "stdcall" fn(
+pub type FnXwfSetProgressPercentage = extern "system" fn(
     nPercent: DWORD,
 );
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfHideProgress = extern "stdcall" fn(
+pub type FnXwfHideProgress = extern "system" fn(
 );
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfShouldStop = extern "stdcall" fn(
+pub type FnXwfShouldStop = extern "system" fn(
 ) -> BOOL;
 
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfGetUserInput = extern "stdcall" fn(
+pub type FnXwfGetUserInput = extern "system" fn(
     lpMessage: LPWSTR,
     lpBuffer: LPWSTR,
     nBufferLen: DWORD,
@@ -248,13 +248,13 @@ pub type FnXwfGetUserInput = extern "stdcall" fn(
 
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfGetExtractedMetadata = extern "stdcall" fn(
+pub type FnXwfGetExtractedMetadata = extern "system" fn(
     nItemID: LONG,
 ) -> LPWSTR;
 
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfGetMetadataEx = extern "stdcall" fn(
+pub type FnXwfGetMetadataEx = extern "system" fn(
     hItem: HANDLE,
     lpnFlags: PDWORD
 ) -> LPVOID;
@@ -262,25 +262,25 @@ pub type FnXwfGetMetadataEx = extern "stdcall" fn(
 
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfReleaseMem = extern "stdcall" fn(
+pub type FnXwfReleaseMem = extern "system" fn(
     lpBuffer: PVOID,
 ) -> BOOL;
 
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfGetItemOfs = extern "stdcall" fn(
+pub type FnXwfGetItemOfs = extern "system" fn(
     nItemID: LONG ,
     nDefOfs: LPINT64,
     nStartSector: LPINT64,
 );
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfGetComment = extern "stdcall" fn(
+pub type FnXwfGetComment = extern "system" fn(
     nItemID: LONG ,
 ) -> LPWSTR;
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfAddComment = extern "stdcall" fn(
+pub type FnXwfAddComment = extern "system" fn(
     nItemID: LONG ,
     lpComment: LPWSTR,
     nFlagsHowToAdd: DWORD,
@@ -288,7 +288,7 @@ pub type FnXwfAddComment = extern "stdcall" fn(
 
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfCreateFile = extern "stdcall" fn(
+pub type FnXwfCreateFile = extern "system" fn(
     pName: LPWSTR,
     nCreationFlags: DWORD,
     nParentItemID: LONG,
@@ -296,14 +296,14 @@ pub type FnXwfCreateFile = extern "stdcall" fn(
 ) -> LONG;
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfSetItemSize = extern "stdcall" fn(
+pub type FnXwfSetItemSize = extern "system" fn(
     nItemID: LONG,
     nSize: __int64,
 );
 
 
 #[allow(non_snake_case, unused_variables)]
-pub type FnXwfSetItemParent = extern "stdcall" fn(
+pub type FnXwfSetItemParent = extern "system" fn(
     nChildItemID: LONG,
     nParentItemID: LONG
 );
