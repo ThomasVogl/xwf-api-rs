@@ -598,9 +598,9 @@ impl Item {
 
     }
 
-    pub fn add_comment(&self, comment: &String, replace: bool) -> Result<(), XwfError>  {
+    pub fn add_comment(&self, comment: &String, flags: AddCommentFlags) -> Result<(), XwfError>  {
         let wstring = WString::from_str(comment);
-        let param = if replace {0x0} else {0x2};
+        let param = flags.bits();
 
         let success = (get_raw_api!().add_comment)(self.item_id, wstring.as_ptr() as LPWSTR, param);
         if success > 0 {
@@ -647,8 +647,21 @@ impl Item {
                     .collect())
             }
         }
+    }
 
-        
+    pub fn add_extracted_metadata<S: AsRef<str>>(&self, prefix: S, metadata: S, flags: AddCommentFlags) -> Result<(), XwfError>  {
+        let prefix = if prefix.as_ref().len() > 4 {
+            &prefix.as_ref()[0..4]
+        } else {
+            prefix.as_ref()
+        };
+        let wstring = WString::from_str(format!("[{}] {}", prefix , metadata.as_ref()));
+        let res = (get_raw_api!().add_extracted_metadata)(self.item_id, wstring.as_ptr() as LPWSTR, flags.bits());
+        if res == 0 {
+            Err(XwfError::XwfFunctionCallFailed("add_extracted_metadata"))
+        } else {
+            Ok(())
+        }
     }
 
     pub fn get_item_category(&self) -> Result<(FileTypeStatus, FileFormatConsistency, FileTypeCategory), XwfError> {

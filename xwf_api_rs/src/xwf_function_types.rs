@@ -254,6 +254,14 @@ pub type FnXwfGetExtractedMetadata = extern "system" fn(
 
 
 #[allow(non_snake_case, unused_variables)]
+pub type FnXwfAddExtractedMetadata = extern "system" fn(
+    nItemID: LONG,
+    lpComment: LPWSTR,
+    nFlagsHowToAdd: DWORD,
+) -> BOOL;
+
+
+#[allow(non_snake_case, unused_variables)]
 pub type FnXwfGetMetadataEx = extern "system" fn(
     hItem: HANDLE,
     lpnFlags: PDWORD

@@ -97,6 +97,14 @@ bitflags! {
         // The source may set any bits
         const _ = !0;
     }
+
+    pub struct AddCommentFlags: u32 {
+        const AppendToExisting                  = 0x0001; //append to any existing extracted metadata, do not replace it
+        const AppendToExistingWithLineBreak     = 0x0002; //append to any existing extracted metadata, do not replace it, and insert a line break as a delimiter
+        // The source may set any bits
+        const _ = !0;
+    }
+
     #[derive(Clone, Serialize, PartialEq, Eq, Debug, Deserialize)]
     pub struct ReportTableFlags: u32 {
         const HintByApplication             = 0x0001; //hint for user by application
