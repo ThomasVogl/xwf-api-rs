@@ -239,6 +239,12 @@ impl From<String> for FileTypeCategory {
     }
 }
 
+impl Into<u8> for FileTypeCategory {
+    fn into(self) -> u8 {
+        unsafe { *(&self as *const FileTypeCategory as *const u8) }
+    }
+}
+
 impl TryFrom<i64> for ItemInfoColorAnalysis {
     type Error = XwfError;
 
@@ -253,6 +259,22 @@ impl TryFrom<i64> for ItemInfoColorAnalysis {
             }
         } else {
             Ok(ItemInfoColorAnalysis::Percentage(value as u8))
+        }
+    }
+}
+
+impl TryFrom<u8> for StorageLocationType {
+    type Error = XwfError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            x if x == StorageLocationType::OtherLocation as u8 => Ok(StorageLocationType::OtherLocation),
+            x if x == StorageLocationType::ApplicationOrSystem as u8 => Ok(StorageLocationType::ApplicationOrSystem),
+            x if x == StorageLocationType::TrashBin as u8 => Ok(StorageLocationType::TrashBin),
+            x if x == StorageLocationType::Thumbnail as u8 => Ok(StorageLocationType::Thumbnail),
+            x if x == StorageLocationType::TemporaryOrCache as u8 => Ok(StorageLocationType::TemporaryOrCache),
+            x if x == StorageLocationType::UserSpace as u8 => Ok(StorageLocationType::UserSpace),
+            _ => Err(XwfError::InvalidEnumValue(("StorageLocationType", value as i64)))
         }
     }
 }

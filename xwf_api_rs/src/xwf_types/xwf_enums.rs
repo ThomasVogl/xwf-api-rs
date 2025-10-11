@@ -199,42 +199,43 @@ pub enum FileTypeStatus {
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone)]
+#[repr(u8)]
 pub enum FileTypeCategory {
-    Picture,
-    Word,
-    Email,
-    Internet,
-    PageLayout,
-    Spreadsheet,
-    Misc,
-    Text,
-    Archive,
-    Audio,
-    Video,
-    WindowsInternal,
-    Thumbnail,
-    Database,
-    Program,
-    MobilePhone,
-    Chat,
-    AddressBook,
-    MacOsXIos,
-    Cad,
-    VariousData,
-    Gps,
-    DiskImage,
-    SourceCode,
-    Cryptography,
-    WindowsRegistry,
-    P2P,
-    Ebook,
-    Graphics3D,
-    Projects,
-    UnixLinux,
-    Font,
-    StillImage,
-    Unknown,
-    Other(String)
+    Picture             = 1,
+    Word                = 2,
+    Email               = 3,
+    Internet            = 4,
+    PageLayout          = 5,
+    Spreadsheet         = 6,
+    Misc                = 7,
+    Text                = 8,
+    Archive             = 9,
+    Audio               = 10,
+    Video               = 11,
+    WindowsInternal     = 12,
+    Thumbnail           = 13,
+    Database            = 14,
+    Program             = 15,
+    MobilePhone         = 16,
+    Chat                = 17,
+    AddressBook         = 18,
+    MacOsXIos           = 19,
+    Cad                 = 20,
+    VariousData         = 21,
+    Gps                 = 22,
+    DiskImage           = 23,
+    SourceCode          = 24,
+    Cryptography        = 25,
+    WindowsRegistry     = 26,
+    P2P                 = 27,
+    Ebook               = 28,
+    Graphics3D          = 29,
+    Projects            = 30,
+    UnixLinux           = 31,
+    Font                = 32,
+    StillImage          = 33,
+    Unknown             = 34,
+    Other(String)       = 255,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -273,10 +274,10 @@ pub enum StorageLocationType {
 }
 
 impl StorageLocationType {
-    pub(crate) fn new(name: &str, path: &str) -> StorageLocationType {
+    pub fn new(name: &str, path: &str) -> StorageLocationType {
         let p_lower = path.to_lowercase() + "\\" + &*name.to_lowercase();
 
-        if regex_static::static_regex!(r"\\.?recycle.*").is_match(&p_lower)
+        if regex_static::static_regex!(r".*\\.?recycle.*").is_match(&p_lower)
             || regex_static::static_regex!(r".*\\.?trash.*").is_match(&p_lower)
             || regex_static::static_regex!(r".*\\found.?[0-9]+\\.*").is_match(&p_lower)
             || p_lower.contains("lost+found")
@@ -348,7 +349,7 @@ impl StorageLocationType {
             || regex_static::static_regex!(r".*\\screen\s?captures?\\.*").is_match(&p_lower)
             || regex_static::static_regex!(r".*\\do[ck]ument[es]\\.*").is_match(&p_lower)
             || regex_static::static_regex!(r".*\\proje[ck]t[es]\\.*").is_match(&p_lower)
-            || regex_static::static_regex!(r".*\\[0-9]+apple\\.*").is_match(&p_lower)
+            || regex_static::static_regex!(r".*\\[0-9]{3,4}apple\\.*").is_match(&p_lower)
             || p_lower.contains(r"aufnahme")
             || p_lower.contains(r"bildschirm")
             || p_lower.contains(r"bilder")
