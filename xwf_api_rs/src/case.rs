@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
+use std::error::Error;
 use std::ptr::null_mut;
 use serde::{Deserialize, Serialize};
 use winapi::shared::minwindef::LPVOID;
@@ -9,6 +10,7 @@ use winsafe::WString;
 use crate::application::Application;
 use crate::get_raw_api;
 use crate::evidence::{Evidence, EvidenceIterator};
+use crate::volume::Volume;
 use crate::item::Item;
 use crate::error::XwfError;
 use crate::xwf_types::*;
@@ -86,8 +88,8 @@ impl Case {
         }
     }
 
-    pub fn iterate_ext<F, R>(&self, item_consumer: F) -> Result<Vec<R>, XwfError>
-    where F: Fn(&Case, &Evidence, &Item) -> Result<R,XwfError> {
+    pub fn iterate_ext<F, R>(&self, item_consumer: F) -> Result<Vec<R>, Box<dyn Error>>
+    where F: Fn(&Case, &Evidence, &Volume, &Item) -> Result<R,Box<dyn Error>> {
         let mut ret:Vec<R> = Vec::new();
 
         Application::show_progress("Iterating over all evidences and items", ProgressFlags::empty());
@@ -96,10 +98,9 @@ impl Case {
         while let Some(ev) = evidence_iterator.next() {
 
             let vol = ev.open()?;
-            vol.select()?;
 
             // get number of elements within volume
-            let num_items = vol.get_item_count()?;
+            let num_items = vol.select()?;
 
             // set progress description
             Application::set_progress_description(format!("processing evidence \"{}\"", ev.get_name()?));
@@ -111,7 +112,7 @@ impl Case {
                 Application::should_stop()?;
 
                 let item = Item::new(item_id as i32);
-                ret.push(item_consumer(self, &ev, &item)?);
+                ret.push(item_consumer(self, &ev, &vol, &item)?);
                 Application::set_progress_percentage((item_id+1) as u32, num_items as u32);
             }
         }
@@ -122,8 +123,8 @@ impl Case {
 
 
 
-    pub fn iterate<F, R>(item_consumer: F) -> Result<Vec<R>, XwfError>
-    where F: Fn(Item) -> Result<R,XwfError> {
+    pub fn iterate<F, R>(item_consumer: F) -> Result<Vec<R>, Box<dyn Error>>
+    where F: Fn(Item) -> Result<R,Box<dyn Error>> {
 
         let mut ret:Vec<R> = Vec::new();
 
