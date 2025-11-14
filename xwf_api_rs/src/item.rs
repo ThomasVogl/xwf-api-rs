@@ -30,9 +30,10 @@ const DEFAULT_DATA_CHUNK_SIZE: usize = 1*1024*1024;
 const BUF_SIZE_HASHSET_QUERY: usize = 512;
 const BUF_SIZE_REPORTTABLE_QUERY: usize = 1024;
 const MAX_BUF_SIZE: usize = 65535;
-
+const MAX_PARENT_ITERATIONS: usize = 1024;
 pub struct ItemIterator {
     cur_item: Option<Item>,
+    num_iterations: usize
 
 }
 
@@ -40,6 +41,7 @@ impl ItemIterator {
     fn create(item: &Item) -> Self{
         ItemIterator {
             cur_item: Some(*item),
+            num_iterations: 0
         }
     }
 }
@@ -51,7 +53,12 @@ impl Iterator for ItemIterator {
 
         match self.cur_item {
             Some(i) => {
+                //force end of iter() method by MAX_PARENT_ITERATIONS iterations
+                if self.num_iterations > MAX_PARENT_ITERATIONS {
+                    return None;
+                }
                 self.cur_item = i.get_parent_item();
+                self.num_iterations += 1;
                 Some(i)
             },
             None => None,
@@ -446,6 +453,10 @@ impl Item {
         let mut parent: Option<Item> = Some(self.clone());
 
         while parent.is_some() {
+            //force return of while loop after MAX_PARENT_ITERATIONS iterations
+            if path_components.len() >= MAX_PARENT_ITERATIONS {
+                break;
+            }
             path_components.push(self.get_name(false)?);
             parent = parent.unwrap().get_parent_item();
         }
@@ -476,7 +487,11 @@ impl Item {
 
         if parent_id < 0 {
             None
-        } else {
+        } else if parent_id == self.item_id {
+            //if item is the parent of itself, do consider this as "no parent", as this makes no sense
+            None
+        }
+        else {
             Some(Item::new(parent_id))
         }
     }
