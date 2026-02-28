@@ -4,7 +4,6 @@ use xwf_api_rs::{xwferror, xwf_types::*, traits::XTension, error::XwfError, expo
 use xwf_api_rs::case::Case;
 use xwf_api_rs::context::ExecutionContext;
 use xwf_api_rs::item::{ItemHandle};
-use xwf_api_rs::volume::HashType;
 
 fn workload() {
     let mut x = 0.0001f64;
@@ -84,7 +83,7 @@ impl XTension for MultiThreadXtension {
     fn xt_process_item_ex(&mut self, _handle: ItemHandle) -> Result<XtProcessItemExReturn, Self::XTensionError> {
         let uid = _handle.item().unique_id(self.context.get_evidence().unwrap());
 
-        let _hash = _handle.item().get_hash_value(HashType::MD5, false).unwrap_or(Vec::new());
+        let _hash = _handle.item().get_hash_value(XwfHashType::MD5, false).unwrap_or(Vec::new());
         let p = Path::new(self.current_output_path.as_ref().unwrap()).join(uid.to_string());
         _handle.write_to_file(p)?;
 

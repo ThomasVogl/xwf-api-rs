@@ -81,6 +81,10 @@ pub enum EvObjPropType {
     FileSystemID        = 19,	//INT64	(unused)	file system identifier (see XWF_GetVolumeInformation for possible values)
     HashType            = 20,	//DWORD	(unused)	hash type
     HashValue           = 21,	//DWORD	LPVOID	hash value (buffer size according to hash type), returns the hash size in bytes
+    #[cfg(feature = "api_21_2")]
+    ReferenceTimeZone       = 30,
+    #[cfg(feature = "api_21_2")]
+    ReferenceTimeZoneUser   = 31,
     CreationTime        = 32,	//FILETIME	(unused)	creation time (when the ev. obj. was added to the case)
     ModificationTime    = 33,	//FILETIME	(unused)	modification time
     HashType2           = 40,	//DWORD	(unused)	hash type #2
@@ -376,6 +380,106 @@ impl StorageLocationType {
     }
 }
 
+macro_rules! back_to_enum {
+    ($(#[$meta:meta])* $vis:vis enum $name:ident {
+        $($(#[$vmeta:meta])* $vname:ident $(= $val:expr)?,)*
+    }) => {
+        $(#[$meta])*
+        $vis enum $name {
+            $($(#[$vmeta])* $vname $(= $val)?,)*
+        }
+
+        impl std::convert::TryFrom<i64> for $name {
+            type Error = ();
+
+            fn try_from(v: i64) -> Result<Self, Self::Error> {
+                match v {
+                    $(x if x == $name::$vname as i64 => Ok($name::$vname),)*
+                    _ => Err(()),
+                }
+            }
+        }
+    }
+}
+#[cfg(feature="api_20_9")]
+back_to_enum! {
+    #[derive(Copy, Clone, Serialize, Deserialize, PartialEq, Debug)]
+    pub enum XwfHashType {
+        CS8 = 1,
+        CS16 = 2,
+        CS32 = 3,
+        CS64 = 4,
+        CRC16 = 5,
+        CRC32 = 6,
+        MD5 = 7,
+        SHA1 = 8,
+        SHA256 = 9,
+        RIPEMD128 = 10,
+        RIPEMD160 = 11,
+        MD4 = 12,
+        ED2K = 13,
+        ADLER32 = 14,
+        TigerTreeHash = 15,
+        Tiger128 = 16,
+        Tiger160 = 17,
+        Tiger192 = 18,
+        MD5Folded = 19,
+    }
+}
+
+#[cfg(not(feature="api_20_9"))]
+back_to_enum! {
+    #[derive(Copy, Clone, Serialize, Deserialize, PartialEq, Debug)]
+    pub enum XwfHashType {
+    CS8 = 1,
+    CS16 = 2,
+    CS32 = 3,
+    CS64 = 4,
+    CRC16 = 5,
+    CRC32 = 6,
+    MD5 = 7,
+    SHA1 = 8,
+    SHA256 = 9,
+    RIPEMD128 = 10,
+    RIPEMD160 = 11,
+    MD4 = 12,
+    ED2K = 13,
+    ADLER32 = 14,
+    TigerTreeHash = 15,
+    Tiger128 = 16,
+    Tiger160 = 17,
+    Tiger192 = 18,
+    }
+}
+
+
+impl XwfHashType {
+    pub fn get_hash_size(&self) -> usize {
+        match self {
+            XwfHashType::CS8 => 1,
+            XwfHashType::CS16 => 2,
+            XwfHashType::CS32 => 4,
+            XwfHashType::CS64 => 8,
+            XwfHashType::CRC16 => 2,
+            XwfHashType::CRC32 => 4,
+            XwfHashType::MD5 => 16,
+            XwfHashType::SHA1 => 20,
+            XwfHashType::SHA256 => 32,
+            XwfHashType::RIPEMD128 => 16,
+            XwfHashType::RIPEMD160 => 20,
+            XwfHashType::MD4 => 16,
+            XwfHashType::ED2K => 16,
+            XwfHashType::ADLER32 => 4,
+            XwfHashType::TigerTreeHash => 24,
+            XwfHashType::Tiger128 => 16,
+            XwfHashType::Tiger160 => 20,
+            XwfHashType::Tiger192 => 24,
+            #[cfg(feature="api_20_9")]
+            XwfHashType::MD5Folded => 16,
+        }
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -423,5 +527,48 @@ mod tests {
         assert_eq!(StorageLocationType::new("xxx.png","\\mega"),
                    StorageLocationType::UserSpace);
 
+    }
+}
+
+
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub enum TimeZoneBias {
+    /// Normaler Bias in Minuten (0 = UTC, +60 = UTC+1, etc.)
+    Minutes(i16),
+    /// Variabel / pro Datei definiert (z.B. exFAT, Evidence Container)
+    Variable,
+    /// Unbekannt (z.B. FAT32 ohne gesetzte Referenz-Zeitzone)
+    Unknown,
+    /// Nicht definierbar (z.B. partitionierter Datenträger)
+    Undefinable,
+}
+
+pub const TZ_BIAS_VARIABLE: i16 = 10000;   // pro Datei definiert
+pub const TZ_BIAS_UNKNOWN: i16 = 10001;    // unbekannt/undefiniert
+pub const TZ_BIAS_UNDEFINABLE: i16 = 10002; // nicht definierba
+
+impl TimeZoneBias {
+    pub fn to_string(&self) -> String {
+        match self {
+            TimeZoneBias::Unknown => "<unbekannt>".to_string(),
+            TimeZoneBias::Undefinable => "<nicht definiert>".to_string(),
+            TimeZoneBias::Variable => "<variabel/pro Datei definiert>".to_string(),
+            TimeZoneBias::Minutes(v) => {
+                let sign = if *v < 0 {
+                    "-"
+                } else { "+" };
+                let hours = *v / 60;
+                let min = *v % 60;
+                format!("UTC{}{:02}:{:02}", sign, hours, min)
+            }
+        }
+    }
+    pub fn from_raw(raw: i16) -> Self {
+        match raw {
+            TZ_BIAS_VARIABLE => Self::Variable,
+            TZ_BIAS_UNKNOWN => Self::Unknown,
+            TZ_BIAS_UNDEFINABLE => Self::Undefinable,
+            minutes => Self::Minutes(minutes),
+        }
     }
 }

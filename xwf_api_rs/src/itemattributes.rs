@@ -2,8 +2,7 @@ use std::cmp::Ordering;
 use crate::error::XwfError;
 use crate::evidence::Evidence;
 use crate::item::{Item, UniqueItemId};
-use crate::volume::HashType;
-use crate::xwf_types::{FileFormatConsistency, FileTypeCategory, FileTypeStatus, ItemInfoClassification, ItemInfoDeletion, ItemInfoFlags, StorageLocationType};
+use crate::xwf_types::{FileFormatConsistency, FileTypeCategory, FileTypeStatus, XwfHashType, ItemInfoClassification, ItemInfoDeletion, ItemInfoFlags, StorageLocationType};
 
 #[derive(Clone)]
 pub struct ItemAttributes {
@@ -45,8 +44,8 @@ impl ItemAttributes {
             category,
             filetype: item.get_item_type(false)?,
             location_type: StorageLocationType::new(item.get_name(false)?.as_str(), item.get_path()?.as_str()),
-            hash1: item.get_hash_value(HashType::MD5, false),
-            hash2: item.get_hash_value(HashType::MD4, true),
+            hash1: item.get_hash_value(XwfHashType::MD5, false),
+            hash2: item.get_hash_value(XwfHashType::MD4, true),
         })
     }
 }

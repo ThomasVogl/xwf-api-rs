@@ -11,106 +11,7 @@ use crate::xwf_types::*;
 use crate::raw_api::RAW_API;
 
 
-macro_rules! back_to_enum {
-    ($(#[$meta:meta])* $vis:vis enum $name:ident {
-        $($(#[$vmeta:meta])* $vname:ident $(= $val:expr)?,)*
-    }) => {
-        $(#[$meta])*
-        $vis enum $name {
-            $($(#[$vmeta])* $vname $(= $val)?,)*
-        }
 
-        impl std::convert::TryFrom<i64> for $name {
-            type Error = ();
-
-            fn try_from(v: i64) -> Result<Self, Self::Error> {
-                match v {
-                    $(x if x == $name::$vname as i64 => Ok($name::$vname),)*
-                    _ => Err(()),
-                }
-            }
-        }
-    }
-}
-#[cfg(feature="api_20_9")]
-back_to_enum! {
-    #[derive(Copy, Clone)]
-    pub enum HashType {
-    CS8 = 1,
-    CS16 = 2,
-    CS32 = 3,
-    CS64 = 4,
-    CRC16 = 5,
-    CRC32 = 6,
-    MD5 = 7,
-    SHA1 = 8,
-    SHA256 = 9,
-    RIPEMD128 = 10,
-    RIPEMD160 = 11,
-    MD4 = 12,
-    ED2K = 13,
-    ADLER32 = 14,
-    TigerTreeHash = 15,
-    Tiger128 = 16,
-    Tiger160 = 17,
-    Tiger192 = 18,
-
-    MD5Folded = 19,
-    }
-}
-
-#[cfg(not(feature="api_20_9"))]
-back_to_enum! {
-    #[derive(Copy, Clone)]
-    pub enum HashType {
-    CS8 = 1,
-    CS16 = 2,
-    CS32 = 3,
-    CS64 = 4,
-    CRC16 = 5,
-    CRC32 = 6,
-    MD5 = 7,
-    SHA1 = 8,
-    SHA256 = 9,
-    RIPEMD128 = 10,
-    RIPEMD160 = 11,
-    MD4 = 12,
-    ED2K = 13,
-    ADLER32 = 14,
-    TigerTreeHash = 15,
-    Tiger128 = 16,
-    Tiger160 = 17,
-    Tiger192 = 18,
-    }
-}
-
-
-impl HashType {
-    pub fn get_hash_size(&self) -> usize {
-        match self {
-            HashType::CS8 => 1,
-            HashType::CS16 => 2,
-            HashType::CS32 => 4,
-            HashType::CS64 => 8,
-            HashType::CRC16 => 2,
-            HashType::CRC32 => 4,
-            HashType::MD5 => 16,
-            HashType::SHA1 => 20,
-            HashType::SHA256 => 32,
-            HashType::RIPEMD128 => 16,
-            HashType::RIPEMD160 => 20,
-            HashType::MD4 => 16,
-            HashType::ED2K => 16,
-            HashType::ADLER32 => 4,
-            HashType::TigerTreeHash => 24,
-            HashType::Tiger128 => 16,
-            HashType::Tiger160 => 20,
-            HashType::Tiger192 => 24,
-            #[cfg(feature="api_20_9")]
-            HashType::MD5Folded => 16,
-        }
-    }
-}
 
 pub struct ItemIterator {
     idx: i32,
@@ -188,17 +89,17 @@ impl Volume {
 
     }
 
-    pub fn get_hash_type(&self, get_secondary: bool) -> Option<HashType> {
+    pub fn get_hash_type(&self, get_secondary: bool) -> Option<XwfHashType> {
         let mut prop_type = VsPropType::HashType1;
         if get_secondary { prop_type = VsPropType::HashType2; }
         let ret = (get_raw_api!().get_vs_prop)(prop_type as LONG, null_mut());
         if ret <= 0 {
             return None;
         }
-        Some(HashType::try_from(ret).unwrap())
+        Some(XwfHashType::try_from(ret).unwrap())
     }
 
-    pub fn set_hash_type(&self, hash_type: HashType, set_secondary: bool) -> Result<(), XwfError>{
+    pub fn set_hash_type(&self, hash_type: XwfHashType, set_secondary: bool) -> Result<(), XwfError>{
 
         let mut prop_type = VsPropType::SetHashType1;
         if set_secondary { prop_type = VsPropType::SetHashType2; }

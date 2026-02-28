@@ -1,9 +1,9 @@
+use std::error::Error;
 use xwf_api_rs::{
     export_all_functions,
     xwfinfo,
     xwf_types::*,
     traits::XTension,
-    error::XwfError,
     case::Case,
     item::Item
 };
@@ -17,7 +17,7 @@ pub struct CountItemsXTension {
 }
 
 impl CountItemsXTension {
-    pub fn get_item_category(&self, item: Item) -> Result<Option<FileTypeCategory>, XwfError> {
+    pub fn get_item_category(&self, item: Item) -> Result<Option<FileTypeCategory>, Box<dyn Error>> {
         let item_flags = item.get_item_info_flags()?;
         let (_status, _consistency, category) = item.get_item_category()?;
         let item_class = item.get_item_info_classification()?;
@@ -39,7 +39,7 @@ impl CountItemsXTension {
 impl XTension for CountItemsXTension {
 
     // define your error type here. You can also define you own error type or use predefined "XwfError"
-    type XTensionError = XwfError;
+    type XTensionError = Box<dyn Error>;
 
     // function to create an instance of your XTension struct
     fn create(context: ExecutionContext) -> CountItemsXTension {

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::ptr::{null, null_mut};
+use chrono::{DateTime, TimeZone};
 use winapi::shared::minwindef::DWORD;
 use winapi::shared::ntdef::{HANDLE, LONG, LPWSTR, PVOID};
 use winsafe::WString;
@@ -231,14 +232,95 @@ impl Evidence {
         }
     }
 
-    pub fn get_description(&self) -> Option<String> {
+    pub fn get_description(&self, remove_empty_lines: bool) -> Option<Vec<String>> {
         let ret = (get_raw_api!().get_ev_obj_prop)(self.evidence_handle, EvObjPropType::Description as DWORD, null_mut() as PVOID);
+        if ret == -1 || ret == 0 {
+            None
+        } else {
+            let s  = unsafe { WString::from_wchars_nullt(ret as LPWSTR).to_string() };
+            let mut lines = s.lines().map(|s| s.to_string()).collect::<Vec<String>>();
+            if remove_empty_lines {
+                lines = lines.into_iter().filter(|s| !s.is_empty()).collect();
+            }
+            Some(lines)
+        }
+
+    }
+
+
+    pub fn get_internal_name(&self) -> Option<String> {
+        let ret = (get_raw_api!().get_ev_obj_prop)(self.evidence_handle, EvObjPropType::InternalName as DWORD, null_mut() as PVOID);
         if ret == -1 || ret == 0 {
             None
         } else {
             unsafe { Some(WString::from_wchars_nullt(ret as LPWSTR).to_string()) }
         }
+    }
 
+    pub fn get_creation_time(&self) -> Option<XwfDateTime> {
+        let ret = (get_raw_api!().get_ev_obj_prop)(self.evidence_handle, EvObjPropType::CreationTime as DWORD, null_mut() as PVOID);
+        if ret == -1 || ret == 0 {
+            None
+        } else {
+            let unix_epoch_sec = ( ret / 10_000_000 ) - 11644473600i64;
+            let nsec_fraction = (( ret % 10_000_000) * 100) as u32;
+
+            let time = chrono::Utc.timestamp_opt(unix_epoch_sec, nsec_fraction).unwrap();
+
+            Some(XwfDateTime::Local(DateTime::from(time)))
+        }
+    }
+
+    #[cfg(feature="api_21_2")]
+    pub fn get_reference_time_zone(&self, display_timezone: bool
+    ) -> Result<(TimeZoneBias, DaylightSavingsDefinition), XwfError> {
+        let mut dst_def = DaylightSavingsDefinition::zeroed();
+
+
+        let reference_time_zone_enum = if display_timezone {
+            EvObjPropType::ReferenceTimeZone as DWORD
+        } else {
+            EvObjPropType::ReferenceTimeZoneUser as DWORD
+        };
+
+        let raw = (get_raw_api!().get_ev_obj_prop)(self.evidence_handle, reference_time_zone_enum, &mut dst_def as *mut DaylightSavingsDefinition as PVOID);
+
+        // Nur die unteren 16 Bit verwenden
+        let bias = (raw & 0xFFFF) as i16;
+        Ok((TimeZoneBias::from_raw(bias), dst_def))
+    }
+
+    pub fn get_byte_size(&self) -> Option<usize> {
+        let ret = (get_raw_api!().get_ev_obj_prop)(self.evidence_handle, EvObjPropType::SizeInBytes as DWORD, null_mut() as PVOID);
+        if ret == -1 || ret == 0 {
+            None
+        } else {
+            Some(ret as usize)
+        }
+    }
+
+    pub fn get_hash(&self, get_secondary: bool) -> Option<XwfHash> {
+
+        let (hash_type_enum, hash_value_enum) = if !get_secondary {
+            (EvObjPropType::HashType as DWORD , EvObjPropType::HashValue as DWORD)
+        } else {
+            (EvObjPropType::HashType2 as DWORD , EvObjPropType::HashValue2 as DWORD)
+        };
+
+        let hash_type = (get_raw_api!().get_ev_obj_prop)(self.evidence_handle, hash_type_enum, null_mut() as PVOID);
+        let hash_type = XwfHashType::try_from(hash_type).ok()?;
+
+
+        let hash_size = hash_type.get_hash_size();
+
+        let mut hash_value: Vec<u8> = vec![0u8; hash_size as usize];
+
+        let _ = (get_raw_api!().get_ev_obj_prop)(self.evidence_handle, hash_value_enum as DWORD, hash_value.as_mut_ptr() as PVOID);
+
+        Some(XwfHash {
+            hash_type,
+            hash_value,
+        })
     }
 
     pub fn get_comments(&self) -> Option<String> {

@@ -106,7 +106,6 @@ impl Case {
             Application::set_progress_description(format!("processing evidence \"{}\"", ev.get_name()?));
             Application::set_progress_percentage(0, num_items as u32);
 
-
             // iterate over all items (number == item id)
             for item_id in 0..num_items {
                 Application::should_stop()?;

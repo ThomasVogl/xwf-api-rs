@@ -1,9 +1,11 @@
 use std::cell::RefCell;
+use std::error::Error;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use xwf_api_rs::{export_all_functions, xwf_types::*, traits::XTension, error::XwfError, evidence::Evidence, case::Case, item::Item};
 use xwf_api_rs::context::ExecutionContext;
+use xwf_api_rs::volume::Volume;
 
 // define a custom structure representing your extension
 // could also have attributes of course
@@ -12,7 +14,7 @@ pub struct CountItemsXTension {
     case: Case
 }
 
-pub fn parse_classification(_case: &Case, evidence: &Evidence, item: &Item, log_file: &RefCell<File>) -> Result<(), XwfError> {
+pub fn parse_classification(_case: &Case, evidence: &Evidence, _: &Volume, item: &Item, log_file: &RefCell<File>) -> Result<(), Box<dyn Error>> {
 
     let item_type = match item.get_item_type(false) {
         Ok(type_str) => {
@@ -87,7 +89,7 @@ impl CountItemsXTension {
 impl XTension for CountItemsXTension {
 
     // define your error type here. You can also define you own error type or use predefined "XwfError"
-    type XTensionError = XwfError;
+    type XTensionError = Box<dyn Error>;
 
     // function to create an instance of your XTension struct
     fn create(context: ExecutionContext) -> CountItemsXTension {
@@ -129,7 +131,7 @@ impl XTension for CountItemsXTension {
             .map_err(|e| XwfError::IoError(e))?;
 
         if self.context.is_supported_operation(&[XtOpType::ActionRun]) {
-            let _ = self.case.iterate_ext(|case, evidence, item| {parse_classification(&case, evidence, item, &log_file)})?;
+            let _ = self.case.iterate_ext(|case, evidence, volume, item| {parse_classification(&case, evidence, volume, item, &log_file)})?;
 
         }
 

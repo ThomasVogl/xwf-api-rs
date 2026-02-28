@@ -4,7 +4,7 @@ use crate::evidence::Evidence;
 use crate::volume::Volume;
 use crate::window::Window;
 use crate::xwf_types::{XtInitFlags, XtLicenseInfo, XtOpType, XtVersion};
-use crate::{xwferror, xwfinfo, xwfwarn};
+use crate::{xwferror, xwfinfo};
 
 pub struct ExecutionContext {
     case: Case,

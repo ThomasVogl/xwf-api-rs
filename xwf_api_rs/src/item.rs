@@ -18,7 +18,7 @@ use crate::error::XwfError;
 use crate::evidence::Evidence;
 use crate::traits::NativeHandle;
 use crate::raw_api::RAW_API;
-use crate::volume::{HashType, Volume};
+use crate::volume::Volume;
 use crate::xwf_types::*;
 use regex::Regex;
 use winapi::ctypes::__int64;
@@ -250,7 +250,7 @@ impl Item {
 
 
 
-    pub fn get_hash_value(&self, hash_type: HashType, get_secondary: bool) -> Option<Vec<u8>>{
+    pub fn get_hash_value(&self, hash_type: XwfHashType, get_secondary: bool) -> Option<Vec<u8>>{
         let hash_size = hash_type.get_hash_size();
         let mut buf_size = hash_size;
         if buf_size < 4 {
@@ -449,17 +449,9 @@ impl Item {
 
     pub fn get_path(&self) -> Result<String, XwfError> {
 
-        let mut path_components: Vec<String> = Vec::new();
-        let mut parent: Option<Item> = Some(self.clone());
-
-        while parent.is_some() {
-            //force return of while loop after MAX_PARENT_ITERATIONS iterations
-            if path_components.len() >= MAX_PARENT_ITERATIONS {
-                break;
-            }
-            path_components.push(self.get_name(false)?);
-            parent = parent.unwrap().get_parent_item();
-        }
+        let mut path_components: Vec<String> = self.iter()
+            .map(|p| p.get_name(false))
+            .collect::<Result<Vec<String>, XwfError>>()?;
 
         path_components.pop();
         path_components.reverse();

@@ -9,20 +9,21 @@ description = "Unofficial Rust Bindings for X-Ways Forensics X-Tension API"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+hex = { version = "0.4.3" , features = ["serde", "alloc", "std"]}
 cstr = "0.2.12"
 winapi = { version="0.3.9", features = ["consoleapi", "minwindef", "ntdef", "libloaderapi"] }
-bitflags = { version = "2.8.0", features = ["serde"] }
-chrono = {  version = "0.4.39", features = ["serde"] }
-serde = { version = "1.0.217", features = ["derive"] }
-regex = "1.11.1"
-winsafe = { version = "0.0.25", features = ["kernel"]}
+bitflags = { version = "2.11.0", features = ["serde"] }
+chrono = {  version = "0.4.44", features = ["serde"] }
+serde = { version = "1.0.228", features = ["derive"] }
+regex = "1.12.3"
+winsafe = { version = "0.0.27", features = ["kernel"]}
 regex_static = "0.1.1"
 
 [lib]
 crate-type = ["lib"]
 
 [features]
-default = [ "api_20_3" ]
+default = [ "api_21_2" ]
 api_21_6 = [ "api_21_5" ]
 api_21_5 = [ "api_21_4" ]
 api_21_4 = [ "api_21_3" ]
