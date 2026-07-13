@@ -362,6 +362,11 @@ impl Item {
         Ok(ItemInfoFlags::from_bits_truncate(result as u64))
     }
 
+    pub fn get_item_info_attr(&self) -> Result<ItemInfoAttributes, XwfError> {
+        let result = self.get_item_info(XwfItemInfoTypes::Attr)?;
+        Ok(ItemInfoAttributes::from_bits_truncate(result))
+    }
+
     pub fn get_item_info_time(&self, infotype: XwfItemInfoTypes, local_time: bool, flags: &ItemInfoFlags) -> Option<XwfDateTime> {
 
         let res_time_config = match infotype {
