@@ -181,7 +181,7 @@ pub enum ItemInfoDeletion {
     CarvedFile                  = 5,    //carved file (since v19.3 SR-3, used to be 1)
     UnknownEnumValue            = 255,
 }
-
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone, Copy)]
 pub enum ItemInfoColorAnalysis {
     NotAvailable,
     Error,
