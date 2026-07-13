@@ -8,6 +8,7 @@ use crate::xwf_types::{FileFormatConsistency, FileTypeCategory, FileTypeStatus, 
 pub struct ItemAttributes {
     pub unique_id: UniqueItemId,
     pub unique_id_parent: Option<UniqueItemId>,
+    pub evidence_name: String,
     pub flags: ItemInfoFlags,
     pub name: String,
     pub alt_name: Option<String>,
@@ -32,6 +33,7 @@ impl ItemAttributes {
         Ok(ItemAttributes  {
             unique_id: item.unique_id(evidence),
             unique_id_parent: item.get_parent_item().map(|i| i.unique_id(evidence)),
+            evidence_name: evidence.get_name()?,
             flags: item.get_item_info_flags()?,
             name: item.get_name(false)?,
             alt_name: item.get_name(true).ok(),
@@ -72,7 +74,7 @@ impl Ord for ItemAttributes {
 
 
 pub fn sort_by_evidence_path_name(attrib_a: &ItemAttributes, attrib_b: &ItemAttributes) -> Ordering {
-    attrib_a.unique_id.short_ev_id.cmp(&attrib_b.unique_id.short_ev_id).then(
+    attrib_a.evidence_name.cmp(&attrib_b.evidence_name).then(
         attrib_a.path.to_uppercase().cmp(&attrib_b.path.to_uppercase()).then(
             attrib_a.name.to_uppercase().cmp(&attrib_b.name.to_uppercase())
         )
