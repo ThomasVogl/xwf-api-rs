@@ -289,42 +289,51 @@ impl StorageLocationType {
             return StorageLocationType::TrashBin;
         }
 
+
+
+        if regex_static::static_regex!(r".*\\thumb.+\.db.*").is_match(&p_lower)
+        || regex_static::static_regex!(r".*thumbnail.*").is_match(&p_lower)
+        || regex_static::static_regex!(r".*msgstore.*").is_match(&p_lower)
+        {
+            return StorageLocationType::Thumbnail;
+        }
+
+        if regex_static::static_regex!(r".*\\te?mp.*").is_match(&p_lower)
+        || regex_static::static_regex!(r".*cache.*").is_match(&p_lower)
+        || regex_static::static_regex!(r".*pagefile.*").is_match(&p_lower)
+        || regex_static::static_regex!(r".*hiberfil.*").is_match(&p_lower)
+        {
+            return StorageLocationType::TemporaryOrCache;
+        }
+
         if p_lower.starts_with(r"\windows\")
             || p_lower.starts_with(r"\windows.old\")
             || p_lower.starts_with(r"\program files\")
             || p_lower.starts_with(r"\program files (x86)\")
             || p_lower.starts_with(r"\programdata\")
-            || p_lower.starts_with(r"\steam\")
-            || p_lower.starts_with(r"\steamapps\")
             || p_lower.starts_with(r"\usr\")
+            || p_lower.starts_with(r"\etc\")
             || p_lower.starts_with(r"\bin\")
             || p_lower.starts_with(r"\var\lib\")
             || p_lower.starts_with(r"\dev\")
             || p_lower.starts_with(r"\proc\")
             || p_lower.contains(r"\system\")
             || p_lower.contains(r"\library\")
+            || p_lower.contains(r"\render")
             || p_lower.contains(r"\applications\")
             || p_lower.contains(r"\res\")
-            || regex_static::static_regex!(r".*resources?\\.*").is_match(&p_lower)
-            || regex_static::static_regex!(r".*assets?\\.*").is_match(&p_lower)
+            || p_lower.contains(r"\steam\")
+            || p_lower.contains(r"\steamapps\")
+            || p_lower.contains(r"resource")
+            || p_lower.contains(r"asset")
+            || p_lower.contains(r"\icon")
+            || p_lower.contains(r"\appdata\roaming\")
+            || p_lower.contains(r"\appdata\local\")
+            || p_lower.contains(r"\appdata\locallow\")
+            || regex_static::static_regex!(r".*games\\.*").is_match(&p_lower)
+            || regex_static::static_regex!(r".*\\drawable-.*").is_match(&p_lower)
         {
             return StorageLocationType::ApplicationOrSystem;
-        }
-
-        if regex_static::static_regex!(r".*\\thumb.+\.db.*").is_match(&p_lower)
-        || regex_static::static_regex!(r".*thumbnail.*").is_match(&p_lower)
-        {
-            return StorageLocationType::Thumbnail;
-        }
-
-        if regex_static::static_regex!(r".*\\te?mp.*").is_match(&p_lower)
-        || regex_static::static_regex!(r".*cache\\.*").is_match(&p_lower)
-        || regex_static::static_regex!(r".*\\appdata\\roaming\\.*").is_match(&p_lower)
-        || regex_static::static_regex!(r".*\\appdata\\local\\.*").is_match(&p_lower)
-        || regex_static::static_regex!(r".*\\appdata\\locallow\\.*").is_match(&p_lower)
-
-        {
-            return StorageLocationType::TemporaryOrCache;
         }
 
 
@@ -371,6 +380,8 @@ impl StorageLocationType {
             || p_lower.contains(r"porn")
             || p_lower.contains(r"whatsapp")
             || p_lower.contains(r"telegram")
+            || p_lower.contains(r"teleguard")
+            || p_lower.contains(r"threema")
         {
             return StorageLocationType::UserSpace;
         }
@@ -505,7 +516,7 @@ mod tests {
                    StorageLocationType::TemporaryOrCache);
 
         assert_eq!(StorageLocationType::new("tray-connected.png",r"\Users\borch\AppData\Roaming\discord"),
-                   StorageLocationType::TemporaryOrCache);
+                   StorageLocationType::ApplicationOrSystem);
 
 
         assert_eq!(StorageLocationType::new("AppList.targetsize-64.png",r"\Users\borch\Downloads\PLAY_STORE_W11_TRD.rar\PLAY_STORE_W11_TRD\Images"),
