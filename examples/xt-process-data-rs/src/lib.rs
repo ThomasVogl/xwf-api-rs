@@ -85,6 +85,7 @@ impl XTension for ProcessDataXtension {
 
                 //get item object from handle
                 let item = handle.item();
+                let item_size = handle.get_logical_size()? as usize;
 
                 // get unique id from items
                 // unique id contains also evidence id to be able to uniquely identify item across evidences
@@ -94,7 +95,7 @@ impl XTension for ProcessDataXtension {
                 let file_type = item.get_item_type(false)?;
 
                 // get first bytes of file to check if contains a JPG header
-                if let Some(header) = handle.read_chunk(0, JPG_HEADER.len()) {
+                if let Some(header) = handle.read_chunk(0, JPG_HEADER.len(), item_size) {
                     if header.eq(&JPG_HEADER) {
                         // construct destination path by unique id and item type
                         let output_file = output_path.join(item_uid.to_string() + "." + &file_type);

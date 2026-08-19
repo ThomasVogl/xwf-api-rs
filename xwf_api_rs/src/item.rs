@@ -23,7 +23,6 @@ use crate::xwf_types::*;
 use regex::Regex;
 use winapi::ctypes::__int64;
 use winsafe::WString;
-use crate::application::Application;
 use crate::util::char_ptr_to_string;
 
 const DEFAULT_DATA_CHUNK_SIZE: usize = 1*1024*1024;
@@ -814,12 +813,10 @@ impl ItemHandle {
         if size <= 0 {
             return Err(XwfError::InvalidItemSize);
         }
-        let mut ret: Vec<u8> = Vec::with_capacity(size as usize);
 
-        while let Some(mut data) = self.read_chunk(ret.len(), DEFAULT_DATA_CHUNK_SIZE as usize) {
-            Application::should_stop()?;
-            ret.append(&mut data);
-        }
+        let Some(ret) = self.read_chunk(0, size as usize, size as usize) else {
+            return Err(XwfError::ReadItemDataFailed)
+        };
 
         if ret.len() == 0 {
             Err(XwfError::ReadItemDataFailed)
@@ -828,7 +825,13 @@ impl ItemHandle {
         }
     }
 
-    pub fn read_chunk(&self, offset: usize, chunk_size: usize ) -> Option<Vec<u8>> {
+    pub fn read_chunk(&self, offset: usize, mut chunk_size: usize, file_size: usize ) -> Option<Vec<u8>> {
+        //limit chunk size to the remaining bytes of the item
+        chunk_size = std::cmp::min(chunk_size, file_size-offset);
+        if chunk_size <= 0 {
+            return None;
+        }
+
         let mut byte_buf: Vec<u8> = vec![0; chunk_size];
         let r = (get_raw_api!().read)(self.item_handle, offset as __int64, byte_buf.as_mut_ptr(), chunk_size as DWORD);
 
@@ -848,9 +851,14 @@ impl ItemHandle {
 
         let mut file = File::create(dest).map_err(|e| XwfError::IoError(e) )?;
 
+        let file_size = self.get_logical_size()? as usize;
+
         let mut current_offset = 0usize;
 
-        while let Some(data) = self.read_chunk(current_offset, DEFAULT_DATA_CHUNK_SIZE as usize) {
+        while current_offset < file_size {
+            let Some(data) = self.read_chunk(current_offset, DEFAULT_DATA_CHUNK_SIZE, file_size) else {
+                return Err(XwfError::ReadItemDataFailed);
+            };
             current_offset+=data.len();
             file.write_all(&data.as_slice()).map_err(|e| XwfError::IoError(e))?;
         }
