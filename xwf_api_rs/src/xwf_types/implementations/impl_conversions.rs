@@ -80,6 +80,8 @@ impl Into<i32> for XtFinalizeReturn {
     fn into(self) -> i32 {
         match self {
             XtFinalizeReturn::RefreshDirectoryListing => {XtFinalizeReturn::RefreshDirectoryListing as i32}
+            XtFinalizeReturn::SaveVolumeSnapshot => {XtFinalizeReturn::SaveVolumeSnapshot as i32}
+            XtFinalizeReturn::RefreshAndSaveVolumeSnapshot => {XtFinalizeReturn::RefreshAndSaveVolumeSnapshot as i32}
             XtFinalizeReturn::Ok => {XtFinalizeReturn::Ok as i32}
         }
     }

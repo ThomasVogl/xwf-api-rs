@@ -33,9 +33,10 @@ impl SrcInfo {
     pub fn from_buffer(data: &mut [u8]) -> SrcInfo {
         assert!(!data.is_empty(), "Buffer cannot be empty");
 
+        // v21.0 and earlier: nBufSize limited to 2^33-1 in x64 builds
         #[cfg(not(feature = "api_21_1"))]
         assert!(
-            data.len() as u64 <= 0x7FFF_FFFF_FFFF_FFFF,
+            data.len() as u64 <= 0x1_FFFF_FFFF,
             "Buffer size exceeds maximum supported size for SrcInfo"
         );
 

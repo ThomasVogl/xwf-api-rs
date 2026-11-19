@@ -22,7 +22,7 @@ pub type FnXwfGetVolumeInformation = extern "system" fn(
     nSectorsPerCluster: *mut DWORD,
     nClusterCount: *mut __int64,
     nFirstClusterSectorNo: *mut __int64
-) -> BOOL;
+);
 
 #[allow(non_snake_case, unused_variables)]
 pub type FnXwfRead = extern "system" fn(
@@ -60,9 +60,10 @@ pub type FnXwfGetItemType = extern "system" fn(
 
 #[allow(non_snake_case, unused_variables)]
 pub type FnXwfSetItemType = extern "system" fn(
+    nItemID: LONG,
     lpTypeDescr: LPWCH,
     nTypeStatus: LONG
-);
+) -> BOOL;
 
 #[allow(non_snake_case, unused_variables)]
 pub type FnXwfGetItemParent = extern "system" fn(
@@ -112,8 +113,8 @@ pub type FnXwfGetReportTableInfo = extern "system" fn(
 pub type FnXwfGetReportTableAssocs = extern "system" fn(
     nItemID: LONG,
     lpBuffer: LPWSTR,
-    nBufferLen: LONG
-) -> DWORD;
+    nBufLenAndMatchType: DWORD
+) -> __int64;
 
 #[allow(non_snake_case, unused_variables)]
 pub type FnXwfGetHashSetAssocs = extern "system" fn(
@@ -307,14 +308,14 @@ pub type FnXwfCreateFile = extern "system" fn(
 pub type FnXwfSetItemSize = extern "system" fn(
     nItemID: LONG,
     nSize: __int64,
-);
+) -> BOOL;
 
 
 #[allow(non_snake_case, unused_variables)]
 pub type FnXwfSetItemParent = extern "system" fn(
     nChildItemID: LONG,
     nParentItemID: LONG
-);
+) -> BOOL;
 
 
 

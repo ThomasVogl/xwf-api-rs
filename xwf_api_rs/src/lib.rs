@@ -13,6 +13,7 @@ pub mod xwf_types;
 pub mod xwf_function_types;
 pub mod context;
 pub mod itemattributes;
+pub mod instance;
 
 // inherit packages
 pub use chrono;

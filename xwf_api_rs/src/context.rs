@@ -5,6 +5,8 @@ use crate::volume::Volume;
 use crate::window::Window;
 use crate::xwf_types::{XtInitFlags, XtLicenseInfo, XtOpType, XtVersion};
 use crate::{xwferror, xwfinfo};
+#[cfg(not(feature = "api_20_1"))]
+use crate::xwfwarn;
 
 pub struct ExecutionContext {
     case: Case,

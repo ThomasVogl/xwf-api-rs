@@ -71,6 +71,11 @@ impl RawApi {
 
     }
 
+    /// Returns true if all X-Ways API functions can be loaded, i.e. accessing RAW_API will not panic.
+    pub fn is_available() -> bool {
+        RawApi::load().is_ok()
+    }
+
     pub fn load_no_error() -> RawApi {
         RawApi::load().expect("unable to load RawApi")
     }

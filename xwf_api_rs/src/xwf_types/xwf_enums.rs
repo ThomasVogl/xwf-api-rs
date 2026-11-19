@@ -147,6 +147,8 @@ pub enum XtInitReturn {
 #[derive(Debug, PartialEq, Eq)]
 pub enum XtFinalizeReturn {
     RefreshDirectoryListing = 1,
+    SaveVolumeSnapshot = 2,             // volume snapshot should be saved (has an effect only in v21.3 and later)
+    RefreshAndSaveVolumeSnapshot = 3,
     Ok = 0
 }
 
@@ -434,7 +436,8 @@ back_to_enum! {
         Tiger128 = 16,
         Tiger160 = 17,
         Tiger192 = 18,
-        MD5Folded = 19,
+        SHA512 = 19,
+        MD5Folded = 24,
     }
 }
 
@@ -464,6 +467,12 @@ back_to_enum! {
 }
 
 
+/// Buffer size used for all calls where X-Ways writes a hash value into a buffer.
+/// X-Ways always writes the hash of the type configured for the volume snapshot / evidence object,
+/// regardless of what the caller expects, so the buffer has to fit the largest possible hash
+/// (PhotoDNA: 144 bytes, SHA-512: 64 bytes).
+pub const HASH_BUFFER_SIZE: usize = 512;
+
 impl XwfHashType {
     pub fn get_hash_size(&self) -> usize {
         match self {
@@ -485,6 +494,8 @@ impl XwfHashType {
             XwfHashType::Tiger128 => 16,
             XwfHashType::Tiger160 => 20,
             XwfHashType::Tiger192 => 24,
+            #[cfg(feature="api_20_9")]
+            XwfHashType::SHA512 => 64,
             #[cfg(feature="api_20_9")]
             XwfHashType::MD5Folded => 16,
         }

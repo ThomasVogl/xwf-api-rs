@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::ptr::{null, null_mut};
-use chrono::{DateTime, TimeZone};
+use chrono::DateTime;
 use winapi::shared::minwindef::{DWORD, MAX_PATH};
 use winapi::shared::ntdef::{HANDLE, LONG, LPWSTR, PVOID};
 use winsafe::WString;
@@ -20,7 +20,7 @@ pub struct Evidence {
     short_id: u16
 }
 
-#[repr(packed(1))]
+#[repr(C, packed(1))]
 #[derive(Copy,Clone)]
 struct ReportTableListItemPacked {
     pub report_table_id: u16,
@@ -59,6 +59,7 @@ pub type ReportTableMap = HashMap<u16, Vec<u32>>;
 
 /// Closes an evidence object opened via `Evidence::open_scoped` when dropped,
 /// unless it was already open before.
+#[must_use = "the evidence object is closed as soon as the guard is dropped"]
 pub struct EvidenceCloseGuard {
     evidence_handle: HANDLE,
     close_on_drop: bool,
@@ -132,13 +133,18 @@ impl Evidence {
         self.open_with_flags(OpenEvObjFlags::empty())
     }
 
+    /// Opens the evidence object (if not already open) and returns its volume. Volume::close()
+    /// only closes the volume if the evidence object was not open before.
     pub fn open_with_flags(&self, flags: OpenEvObjFlags) -> Result<Volume, XwfError> {
+        let was_open = self.is_open();
         let handle = (get_raw_api!().open_ev_obj)(self.evidence_handle, flags.bits());
-        Volume::new(handle)
+        Volume::create(handle, !was_open)
     }
 
     /// Opens the evidence object. If it was not open before, the returned guard closes it again
     /// when dropped, so that the case is left in the state the examiner left it.
+    /// Keep the guard alive (`let (vol, _guard) = ...`, not `let (vol, _) = ...`) as long as the
+    /// volume or items of it are used.
     pub fn open_scoped(&self, flags: OpenEvObjFlags) -> Result<(Volume, EvidenceCloseGuard), XwfError> {
         let was_open = self.is_open();
         let volume = self.open_with_flags(flags)?;
@@ -188,6 +194,8 @@ impl Evidence {
         Some(ret)
        }
 
+    /// Closes the evidence object (data window) and unloads its volume snapshot.
+    /// Only use this for evidence objects the X-Tension has opened itself (see open_scoped()).
     pub fn close(&self) {
         (get_raw_api!().close_ev_obj)(self.evidence_handle);
     }
@@ -297,10 +305,7 @@ impl Evidence {
         if ret == -1 || ret == 0 {
             None
         } else {
-            let unix_epoch_sec = ( ret / 10_000_000 ) - 11644473600i64;
-            let nsec_fraction = (( ret % 10_000_000) * 100) as u32;
-
-            let time = chrono::Utc.timestamp_opt(unix_epoch_sec, nsec_fraction).unwrap();
+            let time = crate::util::filetime_to_utc(ret)?;
 
             Some(XwfDateTime::Local(DateTime::from(time)))
         }
@@ -347,11 +352,14 @@ impl Evidence {
         let hash_type = XwfHashType::try_from(hash_type).ok()?;
 
 
-        let hash_size = hash_type.get_hash_size();
+        // buffer must fit any hash type, X-Ways returns the hash size in bytes
+        let mut hash_value: Vec<u8> = vec![0u8; HASH_BUFFER_SIZE];
 
-        let mut hash_value: Vec<u8> = vec![0u8; hash_size as usize];
-
-        let _ = (get_raw_api!().get_ev_obj_prop)(self.evidence_handle, hash_value_enum as DWORD, hash_value.as_mut_ptr() as PVOID);
+        let ret = (get_raw_api!().get_ev_obj_prop)(self.evidence_handle, hash_value_enum as DWORD, hash_value.as_mut_ptr() as PVOID);
+        if ret <= 0 {
+            return None;
+        }
+        hash_value.truncate(hash_type.get_hash_size());
 
         Some(XwfHash {
             hash_type,
@@ -384,6 +392,8 @@ impl Evidence {
     }
 
 
+    /// Iterates over all items of this evidence object. Selects its volume snapshot and shows a
+    /// progress indicator, so it must not be called from XT_ProcessItem/XT_ProcessItemEx.
     pub fn iterate<F, R, S: AsRef<str>>(&self, caption: S, item_consumer: F) -> Result<Vec<R>, XwfError>
     where F: Fn(&Evidence, &Item) -> Result<R,XwfError> {
         let vol = self.open()?;
@@ -391,7 +401,7 @@ impl Evidence {
 
         let mut ret: Vec<R> = Vec::with_capacity(num_items as usize);
 
-        Application::show_progress(caption, ProgressFlags::empty());
+        let _progress = Application::show_progress_scoped(caption, ProgressFlags::empty());
 
         // set progress description
         Application::set_progress_description(format!("processing items of evidence \"{}\"", self.get_name()?));
@@ -407,7 +417,6 @@ impl Evidence {
             Application::set_progress_percentage((item_id+1) as u32, num_items as u32);
         }
 
-        Application::hide_progress();
 
         Ok(ret)
     }

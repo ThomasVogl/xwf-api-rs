@@ -1,3 +1,4 @@
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::collections::{HashMap, HashSet};
 use std::ptr::null_mut;
 use winapi::shared::minwindef::{DWORD, LPVOID};
@@ -43,16 +44,25 @@ impl Iterator for ItemIterator {
 
 pub struct Volume {
     volume_handle: HANDLE,
+    // true if this volume was opened by the X-Tension and may be closed via close()
+    shall_close: AtomicBool,
 }
 
 
 impl Volume {
+    /// Wraps a volume handle that is owned by X-Ways (e.g. passed to XT_Prepare/XT_Finalize
+    /// or belonging to an evidence object that was already open). close() is a no-op for it.
     pub fn new(volume_handle: HANDLE) -> Result<Volume, XwfError> {
+        Volume::create(volume_handle, false)
+    }
+
+    pub(crate) fn create(volume_handle: HANDLE, shall_close: bool) -> Result<Volume, XwfError> {
         if volume_handle == null_mut() {
             return Err(XwfError::InputHandleIsNull)
         }
         Ok(Volume {
-            volume_handle
+            volume_handle,
+            shall_close: AtomicBool::new(shall_close),
         })
     }
 
@@ -90,13 +100,18 @@ impl Volume {
     }
 
     pub fn get_hash_type(&self, get_secondary: bool) -> Option<XwfHashType> {
+        Volume::current_hash_type(get_secondary)
+    }
+
+    /// Hash type of the currently selected volume snapshot (XWF_GetVSProp needs no volume handle).
+    pub fn current_hash_type(get_secondary: bool) -> Option<XwfHashType> {
         let mut prop_type = VsPropType::HashType1;
         if get_secondary { prop_type = VsPropType::HashType2; }
         let ret = (get_raw_api!().get_vs_prop)(prop_type as LONG, null_mut());
         if ret <= 0 {
             return None;
         }
-        Some(XwfHashType::try_from(ret).unwrap())
+        XwfHashType::try_from(ret).ok()
     }
 
     pub fn set_hash_type(&self, hash_type: XwfHashType, set_secondary: bool) -> Result<(), XwfError>{
@@ -117,8 +132,17 @@ impl Volume {
 
     #[cfg(feature = "api_20_9")]
     pub fn has_changed(&self){
-        let mut data = [0xFF];
-        let _ = (get_raw_api!().get_vs_prop)(VsPropType::SetHasChanged as LONG, data.as_mut_ptr() as PVOID);
+        Volume::mark_selected_as_changed();
+    }
+
+    /// Marks the currently selected volume snapshot as changed, so that X-Ways saves it at the
+    /// latest when its data window is closed (necessary for changes to other volume snapshots than
+    /// the one the X-Tension was called for).
+    #[cfg(feature = "api_20_9")]
+    pub fn mark_selected_as_changed() {
+        // pBuffer must point to a byte with the value 0xFF
+        let mut data: u8 = 0xFF;
+        let _ = (get_raw_api!().get_vs_prop)(VsPropType::SetHasChanged as LONG, &mut data as *mut u8 as PVOID);
     }
 
     #[allow(unused_variables)]
@@ -168,11 +192,18 @@ impl Volume {
 
     pub fn get_name_2(&self) -> String {
         let ptr = (get_raw_api!().get_prop)(self.volume_handle, PropType::PointerName as DWORD, null_mut()) as LPWSTR;
+        if ptr.is_null() {
+            return String::new();
+        }
         unsafe { WString::from_wchars_nullt(ptr).to_string() }
     }
 
+    /// Closes the volume, but only if it was opened by the X-Tension (see Evidence::open())
+    /// and has not been closed before. Volumes owned by X-Ways are never closed.
     pub fn close(&self) {
-        (get_raw_api!().close)(self.volume_handle);
+        if self.shall_close.swap(false, Ordering::SeqCst) {
+            (get_raw_api!().close)(self.volume_handle);
+        }
     }
 
     pub fn iter_mut(&mut self) -> Result<ItemIterator, XwfError> {

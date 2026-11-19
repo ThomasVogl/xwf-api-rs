@@ -88,11 +88,14 @@ impl Case {
         }
     }
 
+    /// Iterates over all items of all evidence objects. Selects the volume snapshot of each evidence
+    /// object (XWF_SelectVolumeSnapshot) and shows a progress indicator, so it must not be called
+    /// from XT_ProcessItem/XT_ProcessItemEx.
     pub fn iterate_ext<F, R>(&self, item_consumer: F) -> Result<Vec<R>, Box<dyn Error>>
     where F: Fn(&Case, &Evidence, &Volume, &Item) -> Result<R,Box<dyn Error>> {
         let mut ret:Vec<R> = Vec::new();
 
-        Application::show_progress("Iterating over all evidences and items", ProgressFlags::empty());
+        let _progress = Application::show_progress_scoped("Iterating over all evidences and items", ProgressFlags::empty());
 
         let mut evidence_iterator = EvidenceIterator::new();
         while let Some(ev) = evidence_iterator.next() {
@@ -116,18 +119,18 @@ impl Case {
             }
         }
 
-        Application::hide_progress();
         Ok(ret)
     }
 
 
 
+    /// See iterate_ext(): must not be called from XT_ProcessItem/XT_ProcessItemEx.
     pub fn iterate<F, R>(item_consumer: F) -> Result<Vec<R>, Box<dyn Error>>
     where F: Fn(Item) -> Result<R,Box<dyn Error>> {
 
         let mut ret:Vec<R> = Vec::new();
 
-        Application::show_progress("Iterating over all evidences and items", ProgressFlags::empty());
+        let _progress = Application::show_progress_scoped("Iterating over all evidences and items", ProgressFlags::empty());
 
         let mut evidence_iterator = EvidenceIterator::new();
         while let Some(ev) = evidence_iterator.next() {
@@ -152,7 +155,6 @@ impl Case {
             }
         }
 
-        Application::hide_progress();
         Ok(ret)
     }
 
@@ -222,7 +224,10 @@ impl Case {
         ev.iter().for_each(|e| {
             e.get_report_table_assocs(false).and_then(|assocs| {
                 for (table_id,v) in assocs {
-                    let table = self.get_report_table_by_id(&table_id).unwrap().clone();
+                    // skip associations to report tables that do not exist (anymore)
+                    let Some(table) = self.get_report_table_by_id(&table_id).cloned() else {
+                        continue;
+                    };
                     let evidence_id = e.get_id();
                     let table_map = match self.report_table_map.get_mut(&evidence_id) {
                         None => {

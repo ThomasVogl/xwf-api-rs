@@ -15,6 +15,17 @@ pub const DEFAULT_OUTPUT_FLAGS: OutputMessageFlags = OutputMessageFlags::empty()
 pub struct Application {
 
 }
+
+/// Hides the progress indicator when dropped (see Application::show_progress_scoped())
+#[must_use = "the progress indicator is hidden as soon as the guard is dropped"]
+pub struct ProgressGuard {}
+
+impl Drop for ProgressGuard {
+    fn drop(&mut self) {
+        Application::hide_progress();
+    }
+}
+
 impl Application {
 
     pub fn new() -> Application {
@@ -85,6 +96,13 @@ impl Application {
     }
     pub fn hide_progress() {
         (get_raw_api!().hide_progress)()
+    }
+
+    /// Shows the progress indicator and hides it again when the returned guard is dropped,
+    /// also if the operation is left early due to an error.
+    pub fn show_progress_scoped<S: AsRef<str>>(caption: S, flags: ProgressFlags) -> ProgressGuard {
+        Application::show_progress(caption, flags);
+        ProgressGuard {}
     }
 
     pub fn set_progress_percentage(num: u32, total: u32) {

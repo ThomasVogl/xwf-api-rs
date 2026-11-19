@@ -6,7 +6,8 @@ use std::ops::BitOr;
 use std::path::Path;
 use std::ptr::null_mut;
 use std::str::FromStr;
-use chrono::{DateTime, TimeZone, Utc};
+use std::sync::atomic::{AtomicBool, Ordering};
+use chrono::DateTime;
 
 use std::hash::{Hash, Hasher};
 
@@ -63,6 +64,18 @@ impl Iterator for ItemIterator {
             None => None,
         }
     }
+}
+
+/// Source of the contents of a file created via Item::create_file_ext()
+pub enum FileSource<'a> {
+    /// no contents (behaves like XWF_CreateItem)
+    None,
+    /// excerpt of the parent file, starting at the given offset (flag 0x02)
+    ExcerptFromParent(i64),
+    /// external file attached to the volume snapshot of an evidence object (flag 0x04)
+    ExternalFile(&'a str),
+    /// contents taken from a buffer (flag 0x10)
+    Buffer(&'a mut SrcInfo),
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -132,8 +145,13 @@ impl UniqueItemId {
         Item::new(self.item_id)
     }
 
+    /// Panics if the evidence object does not exist (anymore). Use try_evidence() to avoid this.
     pub fn evidence(&self) -> Evidence {
-        Evidence::new((get_raw_api!().get_ev_obj)(self.evidence_id)).unwrap()
+        self.try_evidence().expect("evidence object of unique item id does not exist")
+    }
+
+    pub fn try_evidence(&self) -> Option<Evidence> {
+        Evidence::new((get_raw_api!().get_ev_obj)(self.evidence_id))
     }
 }
 
@@ -249,30 +267,36 @@ impl Item {
 
 
 
+    /// Returns the hash value of the item, if the hash type of the currently selected volume
+    /// snapshot matches `hash_type`. Returns None if no hash is available or the hash type differs.
     pub fn get_hash_value(&self, hash_type: XwfHashType, get_secondary: bool) -> Option<Vec<u8>>{
-        let hash_size = hash_type.get_hash_size();
-        let mut buf_size = hash_size;
-        if buf_size < 4 {
-            buf_size = 4;
+        let hash = self.get_hash(get_secondary)?;
+        if hash.hash_type == hash_type {
+            Some(hash.hash_value)
+        } else {
+            None
         }
+    }
 
-        let mut flags = 0x01u32;
+    /// Returns the hash value of the item together with the hash type of the currently selected
+    /// volume snapshot.
+    pub fn get_hash(&self, get_secondary: bool) -> Option<XwfHash> {
+        let hash_type = Volume::current_hash_type(get_secondary)?;
 
-        if get_secondary {
-            flags = 0x02u32;
-        }
+        let flags: u32 = if get_secondary { 0x02 } else { 0x01 };
 
-        let mut buf: Vec<u8> = Vec::with_capacity(buf_size);
-        buf.resize(buf_size,0);
+        // X-Ways writes the hash of the type configured for the volume snapshot, so the buffer
+        // must be large enough for any hash type, not just for the expected one
+        let mut buf: Vec<u8> = vec![0u8; HASH_BUFFER_SIZE];
         buf[0..4].clone_from_slice(&flags.to_le_bytes());
 
         let ret = (get_raw_api!().get_hash_value)(self.item_id, buf.as_mut_ptr() as LPVOID);
 
         if ret != 0 {
-            buf.resize(hash_size, 0u8);
-            return Some(buf);
+            buf.truncate(hash_type.get_hash_size());
+            Some(XwfHash { hash_type, hash_value: buf })
         } else {
-            return None;
+            None
         }
     }
 
@@ -283,7 +307,14 @@ impl Item {
             param = 2;
         }
 
-        let x = (get_raw_api!().set_hash_value)(self.item_id, hash_value.as_ptr() as LPVOID, param);
+        // X-Ways reads as many bytes as implied by the hash type of the volume snapshot
+        let hash_type = Volume::current_hash_type(set_secondary)
+            .ok_or(XwfError::XwfFunctionCallFailed("get_vs_prop"))?;
+        if hash_value.len() != hash_type.get_hash_size() {
+            return Err(XwfError::InvalidInputArgument);
+        }
+
+        let x = util::with_write_lock(|| (get_raw_api!().set_hash_value)(self.item_id, hash_value.as_ptr() as LPVOID, param));
 
         if x != 0 {
             Ok(())
@@ -295,7 +326,12 @@ impl Item {
     pub fn set_item_info_flags(&self, flags: ItemInfoFlags, remove_flags: bool) -> Result<(), XwfError> {
         let n_info_type = if remove_flags { 65 } else { 64 };
 
-        let result = (get_raw_api!().set_item_information)(self.item_id, n_info_type, flags.bits() as i64);
+        // some flags can only be read, but must not be set or removed (API documentation)
+        let flags = flags.difference(ItemInfoFlags::FileEmbeddedinOtherFile
+            | ItemInfoFlags::FileContentsStoredExternally
+            | ItemInfoFlags::AlternativeData);
+
+        let result = util::with_write_lock(|| (get_raw_api!().set_item_information)(self.item_id, n_info_type, flags.bits() as i64));
 
         if result != 0 {
             Ok(())
@@ -306,8 +342,11 @@ impl Item {
 
 
     pub fn set_item_info_classification(&self, classification: ItemInfoClassification) -> Result<(), XwfError> {
+        if classification == ItemInfoClassification::UnknownEnumValue {
+            return Err(XwfError::InvalidInputArgument);
+        }
 
-        let result = (get_raw_api!().set_item_information)(self.item_id, 5, classification as i64);
+        let result = util::with_write_lock(|| (get_raw_api!().set_item_information)(self.item_id, 5, classification as i64));
 
         if result != 0 {
             Ok(())
@@ -317,12 +356,53 @@ impl Item {
     }
 
 
+    /// Creates a file whose contents are taken from a buffer (flag 0x10 is set automatically).
+    /// For excerpts of the parent file or attached external files use create_file_ext().
     pub fn create_file(&self, name: &String, creation_flags: FileCreationFlags, src_info: &mut SrcInfo) -> Result<Item, XwfError> {
+        if creation_flags.intersects(FileCreationFlags::ExcerptFromParent | FileCreationFlags::AttachExternalFile) {
+            return Err(XwfError::InvalidInputArgument);
+        }
+        self.create_file_ext(name, creation_flags, FileSource::Buffer(src_info))
+    }
+
+    /// Creates a file as child of this item. The type of pSourceInfo expected by X-Ways depends on
+    /// the creation flags, so the corresponding flag is derived from `source`.
+    pub fn create_file_ext(&self, name: &String, creation_flags: FileCreationFlags, source: FileSource) -> Result<Item, XwfError> {
         let wstr = WString::from_str(name);
 
-        let p_src_info: *mut SrcInfo = src_info;
+        // flags 0x02, 0x04 and 0x10 are mutually exclusive and define the type of pSourceInfo
+        let mut flags = creation_flags.difference(FileCreationFlags::ExcerptFromParent
+            | FileCreationFlags::AttachExternalFile
+            | FileCreationFlags::FileContentsFromBuffer);
 
-        let result = (get_raw_api!().create_file)(wstr.as_ptr() as LPWSTR, creation_flags.bits(), self.item_id, p_src_info as PVOID);
+        // declared here, so that they outlive the X-Ways call
+        let mut offset: i64;
+        let path: WString;
+
+        let p_source: PVOID = match source {
+            FileSource::None => {
+                flags.remove(FileCreationFlags::KeepExternalFile);
+                null_mut()
+            },
+            FileSource::ExcerptFromParent(start_offset) => {
+                flags.remove(FileCreationFlags::KeepExternalFile);
+                flags.insert(FileCreationFlags::ExcerptFromParent);
+                offset = start_offset;
+                &mut offset as *mut i64 as PVOID
+            },
+            FileSource::ExternalFile(file_path) => {
+                flags.insert(FileCreationFlags::AttachExternalFile);
+                path = WString::from_str(file_path);
+                path.as_ptr() as PVOID
+            },
+            FileSource::Buffer(src_info) => {
+                flags.remove(FileCreationFlags::KeepExternalFile);
+                flags.insert(FileCreationFlags::FileContentsFromBuffer);
+                src_info as *mut SrcInfo as PVOID
+            },
+        };
+
+        let result = util::with_write_lock(|| (get_raw_api!().create_file)(wstr.as_ptr() as LPWSTR, flags.bits(), self.item_id, p_source));
 
         if result < 0 {
             Err(XwfError::XwfFunctionCallFailed("create_file"))
@@ -400,15 +480,12 @@ impl Item {
                     return None;
                 }
 
-                let unix_epoch_sec = ( result / 10_000_000 ) - 11644473600i64;
-                let nsec_fraction = (( result % 10_000_000) * 100) as u32;
-
+                // None for timestamps that cannot be represented (e.g. negative values)
+                let time = util::filetime_to_utc(result)?;
 
                 if time_config.1 {
-                    let time = DateTime::from_timestamp(unix_epoch_sec, nsec_fraction)?.naive_utc();
-                    Some(XwfDateTime::NoTimezone(time))
+                    Some(XwfDateTime::NoTimezone(time.naive_utc()))
                 } else {
-                    let time = Utc.timestamp_opt(unix_epoch_sec, nsec_fraction).unwrap();
 
                     if local_time {
                         Some(XwfDateTime::Local(DateTime::from(time)))
@@ -465,7 +542,7 @@ impl Item {
 
     pub fn add_to_report_table<S: AsRef<str>>(&self, name: S, flags: AddReportTableFlags) {
         let wchar_c_str = WString::from_str(name);
-        (get_raw_api!().add_to_report_table)(self.item_id, wchar_c_str.as_ptr() as LPWSTR, flags.bits());
+        util::with_write_lock(|| (get_raw_api!().add_to_report_table)(self.item_id, wchar_c_str.as_ptr() as LPWSTR, flags.bits()));
     }
 
     pub fn get_parent_dir(&self) -> Option<Item> {
@@ -536,18 +613,33 @@ impl Item {
         let mut buf: Vec<u16> = Vec::new();
         buf.resize(buf_size, 0);
 
-        let num_assocs = (get_raw_api!().get_report_table_assocs)(self.item_id, buf.as_mut_ptr(), buf.len() as i32);
+        // buffer length in characters in the lower bits, highest byte = label type filter (0 = all)
+        let ret = (get_raw_api!().get_report_table_assocs)(self.item_id, buf.as_mut_ptr(), buf.len() as DWORD);
 
-        if num_assocs == 0 {
+        if ret <= 0 {
             return Ok(Vec::new());
         }
 
-        let assocs = winsafe::WString::from_wchars_slice(&buf).to_string().to_string();
+        // no terminating null character -> buffer too small
+        let Some(len) = buf.iter().position(|c| *c == 0) else {
+            return Err(XwfError::GivenBufferToSmallForContent);
+        };
 
-        if assocs.len() == buf.len() {
-            Err(XwfError::GivenBufferToSmallForContent)
+        // up to v21.2 the return value is the number of labels, since v21.3 each of the lower
+        // 6 bytes holds the number of labels of one label type (capped at 255)
+        let byte_counts: Vec<i64> = (0..6).map(|i| (ret >> (i * 8)) & 0xFF).collect();
+        let num_assocs: i64 = if ret > 0xFF && byte_counts.iter().all(|c| *c < 0xFF) {
+            byte_counts.iter().sum()
         } else {
-            util::split_values_by_comma(&assocs, num_assocs as usize)
+            ret
+        };
+
+        let assocs = String::from_utf16_lossy(&buf[..len]);
+        match util::split_values_by_comma(&assocs, num_assocs as usize) {
+            Ok(v) => Ok(v),
+            // number of labels is not reliable (e.g. counts capped at 255 or label names containing ", "),
+            // but the whole string has been received, so a larger buffer would not help
+            Err(_) => Ok(assocs.split(", ").map(|s| s.to_string()).collect()),
         }
     }
 
@@ -613,7 +705,7 @@ impl Item {
         let wstring = WString::from_str(comment);
         let param = flags.bits();
 
-        let success = (get_raw_api!().add_comment)(self.item_id, wstring.as_ptr() as LPWSTR, param);
+        let success = util::with_write_lock(|| (get_raw_api!().add_comment)(self.item_id, wstring.as_ptr() as LPWSTR, param));
         if success > 0 {
             Ok(())
         } else {
@@ -664,7 +756,7 @@ impl Item {
         // truncate to max. 4 characters (not bytes, to avoid panics on multi-byte UTF-8 chars)
         let prefix: String = prefix.as_ref().chars().take(4).collect();
         let wstring = WString::from_str(format!("[{}] {}", prefix , metadata.as_ref()));
-        let res = (get_raw_api!().add_extracted_metadata)(self.item_id, wstring.as_ptr() as LPWSTR, flags.bits());
+        let res = util::with_write_lock(|| (get_raw_api!().add_extracted_metadata)(self.item_id, wstring.as_ptr() as LPWSTR, flags.bits()));
         if res == 0 {
             Err(XwfError::XwfFunctionCallFailed("add_extracted_metadata"))
         } else {
@@ -710,7 +802,8 @@ impl Item {
 pub struct ItemHandle {
     item_handle: HANDLE,
     item: Item,
-    shall_close: bool,
+    // true as long as the handle was opened by the X-Tension and has not been closed yet
+    shall_close: AtomicBool,
 }
 
 impl NativeHandle for ItemHandle {
@@ -731,7 +824,7 @@ impl ItemHandle {
         Ok(ItemHandle {
             item_handle,
             item,
-            shall_close
+            shall_close: AtomicBool::new(shall_close)
         })
     }
     pub fn handle(&self) -> HANDLE {
@@ -760,7 +853,7 @@ impl ItemHandle {
             } else {
 
                 let metadata_str;
-                if flags == 0x1 {
+                if (flags & 0x1) != 0 {
                     metadata_str = char_ptr_to_string(ptr as *mut u8);
                 } else {
                     unsafe { metadata_str = WString::from_wchars_nullt(ptr as *const u16).to_string(); }
@@ -777,12 +870,22 @@ impl ItemHandle {
         (get_raw_api!().get_prop)(self.item_handle, prop_type as DWORD, null_mut())
     }
 
+    /// Returns an empty string if the name is not available.
     pub fn get_name(&self) -> String {
-        unsafe { WString::from_wchars_nullt(self.get_prop(PropType::PointerName) as LPWSTR).to_string() }
+        self.get_prop_string(PropType::PointerName)
     }
 
+    /// Returns an empty string if the path is not available.
     pub fn get_path(&self) -> String {
-        unsafe { WString::from_wchars_nullt(self.get_prop(PropType::PointerFilePath) as LPWSTR).to_string() }
+        self.get_prop_string(PropType::PointerFilePath)
+    }
+
+    fn get_prop_string(&self, prop_type: PropType) -> String {
+        let ptr = self.get_prop(prop_type) as LPWSTR;
+        if ptr.is_null() {
+            return String::new();
+        }
+        unsafe { WString::from_wchars_nullt(ptr).to_string() }
     }
 
     pub fn get_logical_size(&self) -> Result<i64, XwfError> {
@@ -797,8 +900,12 @@ impl ItemHandle {
     pub fn get_physical_size(&self) -> i64 {
         self.get_prop(PropType::PhysicalSize)
     }
+    /// Closes the item handle, but only if it was opened by the X-Tension (Item::open()) and has
+    /// not been closed before. Handles passed by X-Ways (XT_ProcessItemEx) are never closed.
     pub fn close(&self) {
-        (get_raw_api!().close)(self.item_handle);
+        if self.shall_close.swap(false, Ordering::SeqCst) {
+            (get_raw_api!().close)(self.item_handle);
+        }
     }
 
     pub fn item(&self) -> &Item {
@@ -866,10 +973,7 @@ impl ItemHandle {
 
 impl Drop for ItemHandle {
     fn drop(&mut self) {
-        if self.shall_close {
-            (get_raw_api!().close)(self.item_handle)
-        }
-
+        self.close();
     }
 }
 
