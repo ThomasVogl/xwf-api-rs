@@ -661,11 +661,8 @@ impl Item {
     }
 
     pub fn add_extracted_metadata<S: AsRef<str>>(&self, prefix: S, metadata: S, flags: AddCommentFlags) -> Result<(), XwfError>  {
-        let prefix = if prefix.as_ref().len() > 4 {
-            &prefix.as_ref()[0..4]
-        } else {
-            prefix.as_ref()
-        };
+        // truncate to max. 4 characters (not bytes, to avoid panics on multi-byte UTF-8 chars)
+        let prefix: String = prefix.as_ref().chars().take(4).collect();
         let wstring = WString::from_str(format!("[{}] {}", prefix , metadata.as_ref()));
         let res = (get_raw_api!().add_extracted_metadata)(self.item_id, wstring.as_ptr() as LPWSTR, flags.bits());
         if res == 0 {

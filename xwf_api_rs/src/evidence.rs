@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::ptr::{null, null_mut};
 use chrono::{DateTime, TimeZone};
-use winapi::shared::minwindef::DWORD;
+use winapi::shared::minwindef::{DWORD, MAX_PATH};
 use winapi::shared::ntdef::{HANDLE, LONG, LPWSTR, PVOID};
 use winsafe::WString;
 use crate::application::Application;
@@ -56,6 +56,21 @@ impl ReportTableListItem {
 }
 
 pub type ReportTableMap = HashMap<u16, Vec<u32>>;
+
+/// Closes an evidence object opened via `Evidence::open_scoped` when dropped,
+/// unless it was already open before.
+pub struct EvidenceCloseGuard {
+    evidence_handle: HANDLE,
+    close_on_drop: bool,
+}
+
+impl Drop for EvidenceCloseGuard {
+    fn drop(&mut self) {
+        if self.close_on_drop {
+            (get_raw_api!().close_ev_obj)(self.evidence_handle);
+        }
+    }
+}
 
 pub struct EvidenceIterator {
     current_ev: HANDLE,
@@ -114,8 +129,27 @@ impl Evidence {
     }
 
     pub fn open(&self) -> Result<Volume, XwfError> {
-        let handle = (get_raw_api!().open_ev_obj)(self.evidence_handle, 0);
+        self.open_with_flags(OpenEvObjFlags::empty())
+    }
+
+    pub fn open_with_flags(&self, flags: OpenEvObjFlags) -> Result<Volume, XwfError> {
+        let handle = (get_raw_api!().open_ev_obj)(self.evidence_handle, flags.bits());
         Volume::new(handle)
+    }
+
+    /// Opens the evidence object. If it was not open before, the returned guard closes it again
+    /// when dropped, so that the case is left in the state the examiner left it.
+    pub fn open_scoped(&self, flags: OpenEvObjFlags) -> Result<(Volume, EvidenceCloseGuard), XwfError> {
+        let was_open = self.is_open();
+        let volume = self.open_with_flags(flags)?;
+        Ok((volume, EvidenceCloseGuard { evidence_handle: self.evidence_handle, close_on_drop: !was_open }))
+    }
+
+    /// Returns true if the evidence object is currently open in a data window.
+    /// If the state cannot be determined, true is returned (so that it will not be closed).
+    pub fn is_open(&self) -> bool {
+        let ret = (get_raw_api!().get_ev_obj_prop)(self.evidence_handle, EvObjPropType::NumberOfDataWindow as DWORD, null_mut());
+        ret != 0
     }
 
     pub fn get_first_evidence() -> Option<Evidence> {
@@ -223,7 +257,8 @@ impl Evidence {
     }
 
     pub fn get_name(&self) -> Result<String, XwfError> {
-        let mut buf = [0u16; 256];
+        // buffer length according to API documentation: MAX_PATH
+        let mut buf = [0u16; MAX_PATH];
         let ret = (get_raw_api!().get_ev_obj_prop)(self.evidence_handle, EvObjPropType::AbbrevObjTitle as DWORD, buf.as_mut_ptr() as PVOID);
         if ret == -1 {
             Err(XwfError::XwfFunctionCallFailed("get_ev_obj_prop"))
@@ -277,10 +312,11 @@ impl Evidence {
         let mut dst_def = DaylightSavingsDefinition::zeroed();
 
 
+        // 30 = reference time zone, 31 = display time zone selected by the user
         let reference_time_zone_enum = if display_timezone {
-            EvObjPropType::ReferenceTimeZone as DWORD
-        } else {
             EvObjPropType::ReferenceTimeZoneUser as DWORD
+        } else {
+            EvObjPropType::ReferenceTimeZone as DWORD
         };
 
         let raw = (get_raw_api!().get_ev_obj_prop)(self.evidence_handle, reference_time_zone_enum, &mut dst_def as *mut DaylightSavingsDefinition as PVOID);

@@ -98,6 +98,15 @@ bitflags! {
         const _ = !0;
     }
 
+    #[derive(Debug, PartialEq, Eq, Clone, Copy)]
+    pub struct OpenEvObjFlags: u32 {
+        const DoNotTouchDiskOrImage             = 0x0001; //open the evidence object without opening or even looking for/touching the underlying disk or image (v18.1 and later)
+        const ReadOnlyVolumeSnapshot            = 0x0002; //open the volume snapshot as read-only (v18.1 and later)
+        const DoNotDecrypt                      = 0x0004; //open the disk or partition/volume without decrypting it (v21.7 and later)
+        // The source may set any bits
+        const _ = !0;
+    }
+
     pub struct AddCommentFlags: u32 {
         const AppendToExisting                  = 0x0001; //append to any existing extracted metadata, do not replace it
         const AppendToExistingWithLineBreak     = 0x0002; //append to any existing extracted metadata, do not replace it, and insert a line break as a delimiter
